@@ -931,10 +931,5 @@ server.listen(PORT, () => {
     console.log('📍 Server running at: http://localhost:' + PORT);
     console.log('🎯 Modern Apple-style interface ready!');
     console.log('⚡ Automatic wizard with progress tracking');
-    
-    // Auto-open browser
-    const open = require('child_process').spawn('open', ['http://localhost:' + PORT]);
-    open.on('error', () => {
-        console.log('💡 Open your browser manually: http://localhost:' + PORT);
-    });
+    console.log('💡 Browser will open automatically when using ./setup.sh');
 });
