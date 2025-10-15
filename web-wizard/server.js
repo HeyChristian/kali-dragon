@@ -117,30 +117,30 @@ function serveDocumentation(res, docPath) {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
             color: #ffffff;
-            line-height: 1.6;
+            line-height: 1.5;
             min-height: 100vh;
-            font-size: 14px;
+            font-size: 13px;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 1.5rem;
+            padding: 1rem;
         }
         .header {
             background: rgba(28, 28, 30, 0.85);
             backdrop-filter: blur(20px);
-            border-radius: 12px;
-            padding: 1rem 1.5rem;
-            margin-bottom: 1.5rem;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         .header h1 {
-            font-size: 1.25rem;
-            color: #00ff41;
-            font-weight: 600;
+            font-size: 1rem;
+            color: #4CAF50;
+            font-weight: 500;
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -175,77 +175,77 @@ function serveDocumentation(res, docPath) {
         .content {
             background: rgba(28, 28, 30, 0.85);
             backdrop-filter: blur(20px);
-            border-radius: 12px;
-            padding: 2rem;
+            border-radius: 8px;
+            padding: 1.5rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         h1 {
-            color: #00ff41;
-            font-size: 2rem;
-            margin: 1.5rem 0 1rem 0;
-            font-weight: bold;
-        }
-        h2 {
             color: #4CAF50;
             font-size: 1.4rem;
-            margin: 1.5rem 0 1rem 0;
-            border-bottom: 2px solid #4CAF50;
-            padding-bottom: 0.5rem;
+            margin: 1rem 0 0.5rem 0;
+            font-weight: 600;
+        }
+        h2 {
+            color: #66BB6A;
+            font-size: 1.1rem;
+            margin: 1rem 0 0.5rem 0;
+            border-bottom: 1px solid #66BB6A;
+            padding-bottom: 0.2rem;
         }
         h3 {
             color: #81C784;
-            font-size: 1.1rem;
-            margin: 1rem 0 0.5rem 0;
-            font-weight: 600;
+            font-size: 1rem;
+            margin: 0.8rem 0 0.4rem 0;
+            font-weight: 500;
         }
         h4 {
             color: #A5D6A7;
-            font-size: 1rem;
-            margin: 1rem 0 0.5rem 0;
-            font-weight: 600;
+            font-size: 0.9rem;
+            margin: 0.6rem 0 0.3rem 0;
+            font-weight: 500;
         }
         p {
-            margin: 0.8rem 0;
+            margin: 0.6rem 0;
             color: #e0e0e0;
-            font-size: 0.9rem;
-            line-height: 1.5;
+            font-size: 0.85rem;
+            line-height: 1.4;
         }
         code {
-            background: rgba(0, 255, 65, 0.1);
-            padding: 0.2rem 0.4rem;
-            border-radius: 4px;
-            color: #00ff41;
+            background: rgba(76, 175, 80, 0.15);
+            padding: 0.15rem 0.3rem;
+            border-radius: 3px;
+            color: #81C784;
             font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
         .code-block {
             position: relative;
             background: #1e1e1e;
-            border-radius: 8px;
-            margin: 1rem 0;
+            border-radius: 6px;
+            margin: 0.8rem 0;
             border: 1px solid #333;
             overflow: hidden;
         }
         .code-block .code-header {
             background: #333;
-            padding: 0.5rem 1rem;
+            padding: 0.3rem 0.8rem;
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #444;
         }
         .code-block .code-lang {
             color: #888;
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
         }
         .copy-btn {
             background: #4CAF50;
             color: white;
             border: none;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.65rem;
             cursor: pointer;
             transition: all 0.2s;
             margin-left: auto;
@@ -259,36 +259,38 @@ function serveDocumentation(res, docPath) {
         }
         pre {
             background: transparent;
-            padding: 1rem;
+            padding: 0.8rem;
             margin: 0;
             overflow-x: auto;
-            font-size: 0.8rem;
-            line-height: 1.4;
+            font-size: 0.75rem;
+            line-height: 1.3;
         }
         pre code {
             background: transparent;
             padding: 0;
-            color: #00ff41;
-            font-size: 0.8rem;
+            color: #81C784;
+            font-size: 0.75rem;
         }
         a {
             color: #4CAF50;
             text-decoration: underline;
             transition: color 0.3s;
+            font-size: 0.85rem;
         }
         a:hover {
             color: #66BB6A;
         }
         ul, ol {
-            margin: 0.8rem 0;
-            padding-left: 1.5rem;
+            margin: 0.6rem 0;
+            padding-left: 1.2rem;
         }
         li {
-            margin: 0.3rem 0;
-            font-size: 0.9rem;
+            margin: 0.2rem 0;
+            font-size: 0.85rem;
+            line-height: 1.4;
         }
         strong {
-            color: #00ff41;
+            color: #66BB6A;
             font-weight: 600;
         }
         em {
