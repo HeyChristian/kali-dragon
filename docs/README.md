@@ -9,9 +9,9 @@ Welcome to the comprehensive documentation for Kali Dragon - the ultimate Kali L
 - **[System Requirements](../README.md#system-requirements)** - What you need to run Kali Dragon
 
 ### 🔧 Setup & Configuration  
-- **[Kali VM Setup](KALI_VM_SETUP.md)** - Complete Kali Linux VM configuration guide
+- **[Kali UTM Setup](KALI_UTM_SETUP.md)** - Complete UTM + Kali Linux installation guide
 - **[MCP Server Setup](MCP_SERVER_SETUP.md)** - Install and configure MCP server on Kali
-- **[SSH Configuration](KALI_VM_SETUP.md#ssh-configuration)** - Secure SSH access setup
+- **[SSH Configuration](KALI_UTM_SETUP.md#5-configure-ssh-access)** - Secure SSH access setup
 
 ### 🛠️ Troubleshooting
 - **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Solve common issues
@@ -46,9 +46,9 @@ Welcome to the comprehensive documentation for Kali Dragon - the ultimate Kali L
 
 ### New Users Start Here:
 1. 📖 [**Quick Start Guide**](QUICK_START.md) - Essential first steps
-2. 🐧 [**Kali VM Setup**](KALI_VM_SETUP.md) - Configure your VM
+2. 🐧 [**Kali UTM Setup**](KALI_UTM_SETUP.md) - Complete VM installation
 3. 🚀 [**MCP Server Setup**](MCP_SERVER_SETUP.md) - Install MCP server
-4. ✅ [**Test Your Setup**](QUICK_START.md#testing-connection-from-kali-dragon) - Verify everything works
+4. ✅ [**Test Your Setup**](QUICK_START.md#you-re-done) - Verify everything works
 
 ### Having Problems?
 1. 🔧 [**Troubleshooting Guide**](TROUBLESHOOTING.md) - Common solutions
@@ -74,19 +74,20 @@ Access all documentation directly through the Kali Dragon web interface:
 Get quick help directly in the terminal:
 
 ```bash
-# General help
+# Show all available commands
 help
 
-# Command-specific help  
-help ssh
-help docker
-help mcp
+# Show documentation menu
+docs
 
-# System diagnosis
-diagnose
+# Quick access to guides
+quickstart    # Quick Start Guide
+kali-utm      # Kali UTM Setup Guide  
+mcp-setup     # MCP Server Setup Guide
+troubleshoot  # Troubleshooting Guide
 
-# Show system information
-sysinfo
+# Utility commands
+clear         # Clear terminal output
 ```
 
 ## 📱 Accessibility

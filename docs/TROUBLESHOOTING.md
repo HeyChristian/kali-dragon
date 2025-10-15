@@ -1,6 +1,30 @@
 # 🔧 Troubleshooting Guide
 
-This guide helps you resolve common issues when using Kali Dragon.
+Comprehensive solutions for common Kali Dragon MCP setup issues.
+
+## 📋 Quick Diagnostic Checklist
+
+Before diving into specific issues, run this quick diagnostic:
+
+```bash
+# 1. Check Node.js
+node --version
+
+# 2. Check network connectivity
+ping -c 3 google.com
+
+# 3. Check if ports are available
+lsof -i :8000
+lsof -i :3000
+
+# 4. Check Kali VM connectivity (replace IP)
+ping -c 3 192.168.64.3
+ssh -T kali@192.168.64.3 'echo "SSH working"'
+```
+
+---
+
+## 🚨 Common Setup Issues
 
 ## Quick Diagnosis
 
@@ -469,32 +493,210 @@ watch -n 1 'vm_stat'   # macOS
 valgrind --tool=memcheck node server.js  # Linux only
 ```
 
-## Getting Additional Help
+---
 
-### Collect System Information
+## 🤖 Claude Desktop Integration Issues
 
-Before requesting help, gather this information:
+### ❌ "Claude Desktop not found"
+
+**Solutions:**
+
+1. **Install Claude Desktop:**
+   - Download from: [claude.ai/desktop](https://claude.ai/desktop)
+   - Install the application
+   - Launch it once to initialize
+
+2. **Check installation path:**
+   ```bash
+   # Verify installation
+   ls -la "/Applications/Claude.app"
+   
+   # If not found, check alternative paths
+   find /Applications -name "*Claude*" 2>/dev/null
+   ```
+
+### ❌ "MCP server not connecting to Claude"
+
+**Symptoms:**
+- Claude Desktop can't execute Kali commands
+- "Server unavailable" errors
+- Commands timeout
+
+**Solutions:**
+
+1. **Check MCP server status:**
+   ```bash
+   # Check if server is running
+   curl http://localhost:3000/health
+   
+   # Check server logs
+   tail -f kali-dragon.log
+   ```
+
+2. **Restart MCP server:**
+   ```bash
+   # Kill existing server
+   pkill -f "kali_mcp_server"
+   
+   # Start server manually
+   node kali_mcp_server_fixed.js
+   ```
+
+3. **Check Claude Desktop configuration:**
+   ```bash
+   # Check Claude config directory
+   ls ~/Library/Application\ Support/Claude/
+   
+   # Verify MCP configuration
+   cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
+   ```
+
+### ❌ "Tools not available in Claude"
+
+**Solutions:**
+
+1. **Restart Claude Desktop:**
+   - Quit Claude completely
+   - Restart the application
+   - Wait for MCP server connection
+
+2. **Check MCP configuration:**
+   ```bash
+   # Verify config file exists
+   cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
+   
+   # Should contain kali-dragon server config
+   ```
+
+3. **Test MCP connection manually:**
+   ```bash
+   # Test server health
+   curl -X POST http://localhost:3000/mcp/list_tools
+   ```
+
+---
+
+## 🔍 Advanced Debugging
+
+### Enable Debug Mode
+
 ```bash
-#!/bin/bash
-echo "=== KALI DRAGON DEBUG INFO ==="
-echo "Date: $(date)"
-echo "OS: $(uname -a)"
-echo "Node.js: $(node --version 2>/dev/null || echo 'Not found')"
-echo "Python: $(python3 --version 2>/dev/null || echo 'Not found')"
-echo "Docker: $(docker --version 2>/dev/null || echo 'Not found')"
-echo "Git: $(git --version 2>/dev/null || echo 'Not found')"
-echo
-echo "=== NETWORK ==="
-echo "Hostname: $(hostname)"
-echo "Local IPs: $(hostname -I 2>/dev/null || ifconfig | grep inet)"
-echo "Active ports: $(netstat -tln 2>/dev/null | grep LISTEN)"
-echo
-echo "=== DISK SPACE ==="
-df -h
-echo
-echo "=== MEMORY ==="
-free -m 2>/dev/null || vm_stat
+# Start server with debug logging
+DEBUG=* node kali_mcp_server_fixed.js
+
+# Or set environment variable
+export DEBUG=kali-dragon:*
+./setup.sh
 ```
+
+### Check System Logs
+
+```bash
+# macOS logs
+tail -f /var/log/system.log | grep kali-dragon
+
+# Linux logs  
+journalctl -f | grep kali-dragon
+
+# Custom logs
+tail -f kali-dragon.log
+```
+
+### Network Debugging
+
+```bash
+# Check all listening ports
+netstat -tuln
+
+# Monitor network traffic
+sudo tcpdump -i any host YOUR_KALI_IP
+
+# Check routing table
+route -n get YOUR_KALI_IP
+```
+
+---
+
+## 📞 Getting Help
+
+### Before Asking for Help
+
+Please collect this information:
+
+```bash
+# System information
+uname -a
+node --version
+npm --version
+
+# Network information  
+ifconfig | grep inet
+ping -c 3 YOUR_KALI_IP
+
+# Process information
+ps aux | grep kali
+lsof -i :8000
+lsof -i :3000
+
+# Log files
+cat kali-dragon.log | tail -50
+```
+
+### Where to Get Help
+
+1. **GitHub Issues**: [kali-dragon/issues](https://github.com/HeyChristian/kali-dragon/issues)
+2. **Documentation**: Check other guides in `/docs/`
+3. **Discord/Community**: (Link when available)
+
+### Creating Good Bug Reports
+
+Include:
+- **Operating System**: macOS/Linux version
+- **Node.js Version**: `node --version`
+- **Kali VM Type**: UTM/VMware/VirtualBox
+- **Error Messages**: Full error output
+- **Steps to Reproduce**: What you did before the error
+- **Expected vs Actual**: What should vs did happen
+
+---
+
+## 🛠️ Emergency Recovery
+
+### Complete Reset
+
+If everything fails, try a complete reset:
+
+```bash
+# 1. Stop all processes
+pkill -f "node.*kali"
+pkill -f "kali_mcp"
+
+# 2. Clean up ports
+sudo lsof -ti:8000 | xargs sudo kill -9
+sudo lsof -ti:3000 | xargs sudo kill -9
+
+# 3. Remove temporary files
+rm -rf /tmp/kali-dragon*
+rm -f kali-dragon.log
+
+# 4. Reset SSH keys
+rm ~/.ssh/id_rsa*
+ssh-keygen -t rsa -b 4096
+
+# 5. Start fresh
+./setup.sh
+```
+
+### VM Reset
+
+If your Kali VM is corrupted:
+
+1. **Take a snapshot** before making changes (UTM/VMware)
+2. **Reinstall Kali** using the UTM guide
+3. **Restore from known-good snapshot**
+4. **Use Docker alternative** temporarily
+
+## Getting Additional Help
 
 ### Report Issues
 
@@ -511,4 +713,17 @@ free -m 2>/dev/null || vm_stat
 
 ---
 
-🐉 **Still having issues?** Don't hesitate to reach out for help - the community is here to support you!
+<div align="center">
+
+## 💡 Still Having Issues?
+
+**Don't give up!** Most issues have simple solutions.
+
+1. **Check this guide thoroughly**
+2. **Search GitHub issues** 
+3. **Ask the community**
+4. **Create a detailed bug report**
+
+**🐉 We're here to help you get Kali Dragon working!**
+
+</div>

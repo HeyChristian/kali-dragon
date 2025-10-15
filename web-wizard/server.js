@@ -399,6 +399,22 @@ function serveHTML(res) {
                             <h3 class="text-3xl font-bold mb-4 text-white">Configure Kali VM</h3>
                             <p class="text-apple-secondary mb-6 max-w-lg mx-auto">Enter your Kali Linux VM credentials to setup passwordless SSH access</p>
                             
+                            <!-- Help Link for UTM Setup -->
+                            <div class="mb-6">
+                                <div class="bg-blue-900/30 border border-blue-500/30 rounded-apple p-4">
+                                    <div class="flex items-center space-x-3">
+                                        <span class="text-blue-400 text-xl">💡</span>
+                                        <div>
+                                            <p class="text-sm text-blue-100 font-medium">Need help setting up Kali Linux with UTM?</p>
+                                            <button @click="openDocumentation('KALI_UTM_SETUP.md')" 
+                                                    class="text-blue-400 hover:text-blue-300 text-sm underline mt-1 transition-colors">
+                                                📖 Complete UTM + Kali Installation Guide
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <!-- Kali Credentials Form -->
                             <div x-show="!kaliConfigured" class="max-w-md mx-auto mb-8">
                                 <div class="space-y-4">
@@ -600,11 +616,17 @@ function serveHTML(res) {
         </div>
 
         <!-- Quick Actions -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
             <button @click="openDocumentation('QUICK_START.md')" class="glass-effect rounded-apple-lg p-6 text-left hover:bg-gray-800 transition-all step-card">
                 <div class="text-2xl mb-3">📚</div>
                 <h3 class="text-lg font-semibold mb-2">Quick Start Guide</h3>
                 <p class="text-apple-secondary text-sm">Get up and running in minutes</p>
+            </button>
+            
+            <button @click="openDocumentation('KALI_UTM_SETUP.md')" class="glass-effect rounded-apple-lg p-6 text-left hover:bg-gray-800 transition-all step-card">
+                <div class="text-2xl mb-3">🐧</div>
+                <h3 class="text-lg font-semibold mb-2">Kali UTM Setup</h3>
+                <p class="text-apple-secondary text-sm">Complete UTM installation guide</p>
             </button>
             
             <button @click="openDocumentation('TROUBLESHOOTING.md')" class="glass-effect rounded-apple-lg p-6 text-left hover:bg-gray-800 transition-all step-card">
@@ -771,6 +793,14 @@ function serveHTML(res) {
                         this.showHelp();
                     } else if (this.currentCommand === 'docs') {
                         this.showDocsMenu();
+                    } else if (this.currentCommand === 'kali-utm') {
+                        this.openDocumentation('KALI_UTM_SETUP.md');
+                    } else if (this.currentCommand === 'quickstart') {
+                        this.openDocumentation('QUICK_START.md');
+                    } else if (this.currentCommand === 'mcp-setup') {
+                        this.openDocumentation('MCP_SERVER_SETUP.md');
+                    } else if (this.currentCommand === 'troubleshoot') {
+                        this.openDocumentation('TROUBLESHOOTING.md');
                     } else {
                         // Send to backend
                         try {
@@ -803,12 +833,15 @@ function serveHTML(res) {
                     this.appendToTerminal('  docs        - Show documentation menu', 'output');
                     this.appendToTerminal('  clear       - Clear terminal', 'output');
                     this.appendToTerminal('  quickstart  - Open quick start guide', 'output');
+                    this.appendToTerminal('  kali-utm    - Open Kali UTM setup guide', 'output');
+                    this.appendToTerminal('  mcp-setup   - Open MCP server setup guide', 'output');
+                    this.appendToTerminal('  troubleshoot- Open troubleshooting guide', 'output');
                 },
 
                 showDocsMenu() {
                     this.appendToTerminal('📚 Available Documentation:', 'info');
                     this.appendToTerminal('  1. Quick Start Guide - quickstart', 'output');
-                    this.appendToTerminal('  2. Kali VM Setup - kali-setup', 'output');
+                    this.appendToTerminal('  2. Kali UTM Setup - kali-utm', 'output');
                     this.appendToTerminal('  3. MCP Server Setup - mcp-setup', 'output');
                     this.appendToTerminal('  4. Troubleshooting - troubleshoot', 'output');
                 },

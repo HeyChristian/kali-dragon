@@ -1,184 +1,250 @@
 # 🚀 Quick Start Guide
 
-## Prerequisites
+Get your Kali Dragon MCP environment up and running in **15 minutes** or less!
 
-Before starting with Kali Dragon, ensure you have:
+## ⚡ TL;DR - Super Quick Setup
 
-- **Node.js 14+** installed on your system
-- **Modern web browser** (Chrome, Firefox, Safari, Edge)
-- **Terminal/Command Line** access
+```bash
+# 1. Clone and run setup wizard
+git clone https://github.com/HeyChristian/kali-dragon.git
+cd kali-dragon
+./setup.sh
 
-## Installation Steps
+# 2. Follow the web wizard at http://localhost:8000
+# 3. Configure your Kali VM in step 3
+# 4. Done! 🎉
+```
 
-### 1. Clone the Repository
+---
+
+## 📋 Prerequisites Checklist
+
+Before starting, ensure you have:
+
+- ✅ **macOS** (Intel or Apple Silicon)  
+- ✅ **Node.js** installed (`node --version`)
+- ✅ **Claude Desktop** ([Download here](https://claude.ai/desktop))
+- ✅ **Kali Linux VM** running in UTM/VMware/VirtualBox
+- ✅ **SSH access** to your Kali VM
+- ✅ **15 minutes** of your time
+
+## 🎯 5-Step Setup Process
+
+### Step 1: Download Kali Dragon
+
 ```bash
 git clone https://github.com/HeyChristian/kali-dragon.git
 cd kali-dragon
 ```
 
-### 2. Launch Kali Dragon
+### Step 2: Run the Setup Wizard
+
 ```bash
 ./setup.sh
 ```
 
-That's it! The setup script will:
-- ✅ Check Node.js installation
-- ✅ Create project structure  
-- ✅ Start the web server on port 8000
-- ✅ Open your browser automatically
+This will:
+- Start the web wizard server
+- Open your browser automatically
+- Begin the guided setup process
 
-## First Time Setup
+### Step 3: Use the Web Interface
 
-### Initial System Check
-1. Click the **"🚀 START SETUP PROCESS"** button
-2. The system will automatically check for:
-   - Python 3 installation
-   - Docker availability
-   - SSH client presence
-   - System compatibility
+The browser will open to `http://localhost:8000` with a beautiful setup wizard:
 
-### Install Missing Dependencies
-Based on the system check results:
+1. **System Check**: Verify prerequisites
+2. **Dependencies**: Install required packages
+3. **Kali VM Config**: Enter your VM credentials
+4. **MCP Server**: Install and configure
+5. **Testing**: Verify everything works
 
-**For macOS:**
+### Step 4: Configure Your Kali VM
+
+In **Step 3** of the wizard:
+
+- Enter your Kali VM IP address (e.g., `192.168.64.3`)
+- Username: `kali` (or your custom username)
+- Password: Your Kali VM password
+- SSH Port: `22` (default)
+
+🆘 **Need help with Kali VM setup?** Click the **"📖 Complete UTM + Kali Installation Guide"** link in the wizard.
+
+### Step 5: Complete Setup
+
+The wizard will:
+- Test SSH connection to your Kali VM
+- Install MCP server components
+- Configure Claude Desktop integration
+- Run connectivity tests
+
+---
+
+## 🎉 You're Done!
+
+Once setup is complete, you can:
+
+### Use Kali Tools in Claude Desktop
+
+1. Open **Claude Desktop**
+2. Start a new conversation
+3. Try commands like:
+   ```
+   Can you run nmap on my local network?
+   Show me my Kali system information
+   What networking tools are available?
+   ```
+
+### Access the Control Panel
+
+- Visit `http://localhost:8000` anytime
+- Use the terminal interface
+- Check system status
+- View documentation
+
+### Run Manual Commands
+
 ```bash
-# Install Python 3
-brew install python3
+# Start the MCP server manually
+node kali_mcp_server_fixed.js
 
-# Install Docker (OrbStack recommended)
-# Download from: https://orbstack.dev
+# Check server status
+curl http://localhost:3000/health
+
+# View logs
+tail -f kali-dragon.log
 ```
 
-**For Linux:**
-```bash
-# Install Python 3
-sudo apt install python3 python3-pip  # Ubuntu/Debian
-sudo yum install python3 python3-pip  # CentOS/RHEL
+---
 
-# Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
+## 🚨 Common Issues & Quick Fixes
+
+### ❌ "Cannot connect to Kali VM"
+
+**Fix:**
+```bash
+# Test SSH manually
+ssh kali@YOUR_KALI_IP
+
+# If this fails, check:
+# 1. VM is running
+# 2. SSH service is active: sudo systemctl start ssh
+# 3. IP address is correct: ip addr show
 ```
 
-## Using the Web Interface
+### ❌ "Claude Desktop not found"
 
-### Terminal Interface
-- **Main Terminal**: 60% of screen height, authentic Kali-style prompts
-- **Command Execution**: Type commands and press Enter or click "RUN"
-- **Output Display**: Real-time command output with color coding
-- **Auto-focus**: Terminal input is always ready for typing
+**Fix:**
+1. Download from [claude.ai/desktop](https://claude.ai/desktop)
+2. Install the app
+3. Restart the setup wizard
 
-### Quick Actions
-Navigate using the tabbed interface:
+### ❌ "Node.js not found"
 
-**🏗️ Setup Tab:**
-- Install Dependencies
-- Configure Kali VM
-- Setup MCP Server  
-- Test Connection
-
-**⚙️ Management Tab:**
-- Start/Stop MCP Server
-- View System Logs
-- Restart Services
-- Configuration Tools
-
-### System Status
-Monitor real-time status in the top header:
-- Green dots: Service running/available
-- Yellow dots: Requires attention
-- Red dots: Service unavailable/error
-
-## Common Commands
-
-### System Information
+**Fix:**
 ```bash
-# Check system info
-uname -a
-python3 --version
-docker --version
-
-# Check network connectivity
-ping -c 3 google.com
-```
-
-### Kali VM Connection
-```bash
-# Test SSH connection to Kali VM
-ssh kali@192.168.1.100
-
-# Check Kali services
-systemctl status ssh
-systemctl status docker
-```
-
-### Docker Operations
-```bash
-# List running containers
-docker ps
-
-# Pull Kali Linux image
-docker pull kalilinux/kali-rolling
-
-# Run Kali container
-docker run -it kalilinux/kali-rolling bash
-```
-
-## Troubleshooting
-
-### Browser Won't Open
-If the browser doesn't open automatically:
-1. Manually navigate to: `http://localhost:8000`
-2. Check if another service is using port 8000
-3. Try a different browser
-
-### Node.js Not Found
-```bash
-# Check Node.js installation
-node --version
-
-# Install Node.js (macOS)
+# Install Node.js
 brew install node
 
-# Install Node.js (Linux)
-curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt-get install -y nodejs
+# Or download from nodejs.org
 ```
 
-### Permission Errors
+### ❌ "Permission denied"
+
+**Fix:**
 ```bash
 # Make setup script executable
 chmod +x setup.sh
 
-# Run with appropriate permissions
-sudo ./setup.sh  # If needed
+# Run with proper permissions
+sudo ./setup.sh
 ```
-
-### Port Already in Use
-```bash
-# Find process using port 8000
-lsof -i :8000
-
-# Kill process (replace PID)
-kill -9 <PID>
-
-# Start Kali Dragon again
-./setup.sh
-```
-
-## Next Steps
-
-1. **Complete System Check**: Ensure all dependencies are installed
-2. **Configure Kali VM**: Set up SSH connection to your Kali Linux VM
-3. **Setup MCP Server**: Initialize MCP services for advanced features
-4. **Explore Documentation**: Check other guides in the docs/ folder
-
-## Getting Help
-
-- **Terminal Commands**: Type `help` in the terminal for available commands
-- **GitHub Issues**: Report bugs at https://github.com/HeyChristian/kali-dragon/issues
-- **Documentation**: Browse all guides in the web interface under "📚 Documentation"
 
 ---
 
-🐉 **Ready to unleash the Dragon!** Your Kali Linux MCP setup is just a few clicks away.
+## 🔧 Advanced Configuration
+
+### Custom Kali VM Setup
+
+If you don't have a Kali VM yet:
+
+1. **UTM Method** (Recommended for Mac):
+   - Click "📖 Complete UTM + Kali Installation Guide" in the wizard
+   - Follow the detailed step-by-step guide
+
+2. **Docker Method** (Alternative):
+   ```bash
+   docker run -it --rm kalilinux/kali-rolling
+   ```
+
+### Multiple Kali VMs
+
+Edit the configuration to manage multiple VMs:
+
+```bash
+# Edit server configuration
+nano kali_mcp_server_fixed.js
+
+# Add additional VM configs
+```
+
+### Custom Tools
+
+Add your own tools to the MCP server:
+
+```bash
+# Edit the tools directory
+ls templates/tools/
+
+# Add custom scripts
+nano templates/tools/my-custom-tool.sh
+```
+
+---
+
+## 📚 Next Steps
+
+### Explore Documentation
+
+- 🐧 **[Kali UTM Setup](KALI_UTM_SETUP.md)** - Detailed VM installation
+- 🔧 **[Troubleshooting](TROUBLESHOOTING.md)** - Solve common problems  
+- 🚀 **[MCP Server Setup](MCP_SERVER_SETUP.md)** - Advanced server config
+- 📊 **[Architecture Guide](../ARQUITECTURA_KALI_MCP.md)** - Technical overview
+
+### Join the Community
+
+- 🐉 **GitHub**: [kali-dragon](https://github.com/HeyChristian/kali-dragon)
+- 💬 **Issues**: Report bugs and request features
+- ⭐ **Star**: Help others discover this tool
+
+### Advanced Usage
+
+- **Custom Tools**: Add your own security scripts
+- **Multi-VM**: Manage multiple Kali environments  
+- **Integration**: Connect with other security platforms
+- **Automation**: Create automated security workflows
+
+---
+
+## 🎯 Success Indicators
+
+You'll know everything is working when:
+
+✅ **Web wizard completes without errors**  
+✅ **Claude Desktop can execute Kali commands**  
+✅ **SSH connection to Kali VM works**  
+✅ **MCP server responds to health checks**  
+✅ **All tests pass in the final step**
+
+---
+
+<div align="center">
+
+## 🐉 Ready to Hack Ethically!
+
+**Your Kali Dragon MCP environment is now ready for ethical security testing.**
+
+*Remember: Always hack responsibly and only on systems you own or have explicit permission to test.*
+
+**Need help?** Check the [Troubleshooting Guide](TROUBLESHOOTING.md) or open a GitHub issue.
+
+</div>
