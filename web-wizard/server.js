@@ -336,6 +336,12 @@ function serveHTML(res) {
                             <div class="max-w-md mx-auto mb-8 text-left">
                                 <div class="space-y-3">
                                     <div class="flex items-center space-x-3">
+                                        <div class="w-6 h-6 rounded-full bg-apple-success flex items-center justify-center">
+                                            <span class="text-xs text-white">✓</span>
+                                        </div>
+                                        <span class="text-apple-text">Node.js (already running)</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
                                         <div class="w-6 h-6 rounded-full bg-apple-warning flex items-center justify-center">
                                             <span class="text-xs">?</span>
                                         </div>
@@ -345,20 +351,14 @@ function serveHTML(res) {
                                         <div class="w-6 h-6 rounded-full bg-apple-warning flex items-center justify-center">
                                             <span class="text-xs">?</span>
                                         </div>
-                                        <span class="text-apple-secondary">Python 3 (for scripting)</span>
+                                        <span class="text-apple-secondary">SSH Client (for Kali VM connection)</span>
                                     </div>
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-6 h-6 rounded-full bg-apple-warning flex items-center justify-center">
-                                            <span class="text-xs">?</span>
-                                        </div>
-                                        <span class="text-apple-secondary">Docker (for containerization)</span>
-                                    </div>
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-6 h-6 rounded-full bg-apple-warning flex items-center justify-center">
-                                            <span class="text-xs">?</span>
-                                        </div>
-                                        <span class="text-apple-secondary">SSH Client (for Kali connection)</span>
-                                    </div>
+                                </div>
+                                
+                                <div class="mt-4 p-3 bg-apple-surface rounded-lg">
+                                    <p class="text-xs text-apple-secondary">
+                                        <span class="text-apple-accent">💡 Note:</span> This setup is pure JavaScript - no Python or Docker needed!
+                                    </p>
                                 </div>
                             </div>
                             
@@ -696,19 +696,18 @@ function serveHTML(res) {
                         case 1:
                             command = 'echo "🔍 Checking system requirements..." && ' +
                                     'echo "" && ' +
+                                    'echo "Checking Node.js..." && ' +
+                                    'echo "✅ Node.js found: $(node --version)" && ' +
+                                    'echo "" && ' +
                                     'echo "Checking Claude Desktop..." && ' +
                                     '(ls "/Applications/Claude.app" >/dev/null 2>&1 && echo "✅ Claude Desktop found" || echo "❌ Claude Desktop not found - Please install from https://claude.ai/download") && ' +
                                     'echo "" && ' +
-                                    'echo "Checking Python 3..." && ' +
-                                    '(which python3 >/dev/null 2>&1 && echo "✅ Python 3 found: $(python3 --version)" || echo "❌ Python 3 not found") && ' +
-                                    'echo "" && ' +
-                                    'echo "Checking Docker..." && ' +
-                                    '(which docker >/dev/null 2>&1 && echo "✅ Docker found: $(docker --version)" || echo "❌ Docker not found") && ' +
-                                    'echo "" && ' +
-                                    'echo "Checking SSH..." && ' +
+                                    'echo "Checking SSH client (for Kali VM connection)..." && ' +
                                     '(which ssh >/dev/null 2>&1 && echo "✅ SSH client found" || echo "❌ SSH client not found") && ' +
                                     'echo "" && ' +
-                                    'echo "✅ System requirements check complete!"';
+                                    'echo "✅ System requirements check complete!" && ' +
+                                    'echo "" && ' +
+                                    'echo "💡 Note: This setup only requires Node.js, Claude Desktop, and SSH"';
                             break;
                         case 2:
                             command = 'echo "📦 Installing dependencies..." && echo "Python, Docker, SSH verification" && sleep 2 && echo "✅ Dependencies ready"';

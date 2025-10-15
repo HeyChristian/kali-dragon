@@ -696,19 +696,18 @@ function serveHTML(res) {
                         case 1:
                             command = 'echo "🔍 Checking system requirements..." && ' +
                                     'echo "" && ' +
+                                    'echo "Checking Node.js..." && ' +
+                                    'echo "✅ Node.js found: $(node --version)" && ' +
+                                    'echo "" && ' +
                                     'echo "Checking Claude Desktop..." && ' +
                                     '(ls "/Applications/Claude.app" >/dev/null 2>&1 && echo "✅ Claude Desktop found" || echo "❌ Claude Desktop not found - Please install from https://claude.ai/download") && ' +
                                     'echo "" && ' +
-                                    'echo "Checking Python 3..." && ' +
-                                    '(which python3 >/dev/null 2>&1 && echo "✅ Python 3 found: $(python3 --version)" || echo "❌ Python 3 not found") && ' +
-                                    'echo "" && ' +
-                                    'echo "Checking Docker..." && ' +
-                                    '(which docker >/dev/null 2>&1 && echo "✅ Docker found: $(docker --version)" || echo "❌ Docker not found") && ' +
-                                    'echo "" && ' +
-                                    'echo "Checking SSH..." && ' +
+                                    'echo "Checking SSH client (for Kali VM connection)..." && ' +
                                     '(which ssh >/dev/null 2>&1 && echo "✅ SSH client found" || echo "❌ SSH client not found") && ' +
                                     'echo "" && ' +
-                                    'echo "✅ System requirements check complete!"';
+                                    'echo "✅ System requirements check complete!" && ' +
+                                    'echo "" && ' +
+                                    'echo "💡 Note: This setup only requires Node.js, Claude Desktop, and SSH"';
                             break;
                         case 2:
                             command = 'echo "📦 Installing dependencies..." && echo "Python, Docker, SSH verification" && sleep 2 && echo "✅ Dependencies ready"';
