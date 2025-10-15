@@ -1061,26 +1061,55 @@ function serveHTML(res) {
                 testKaliConnection() {
                     this.isRunning = true;
                     
-                    // Test SSH connection to Kali VM and setup passwordless access
-                    const command = 'printf "Testing connection to Kali VM...\\n\\n" && ' +
-                                  'printf "Generating SSH key if not exists...\\n" && ' +
-                                  'ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa -q || printf "SSH key already exists\\n" && ' +
+                    // Generate a comprehensive SSH setup and test command based on kali_mcp_wizard.sh logic
+                    const keyName = 'kali_mcp_key';
+                    const command = 'printf "🐧 Testing connection to Kali VM: ' + this.kaliIP + '\\n\\n" && ' +
+                                  'printf "🔑 Setting up SSH key for MCP connection...\\n" && ' +
+                                  '# Generate SSH key if it doesnt exist\n' +
+                                  'if [ ! -f ~/.ssh/' + keyName + ' ]; then\n' +
+                                  '  printf "Generating SSH key...\\n" && \n' +
+                                  '  ssh-keygen -t rsa -b 4096 -f ~/.ssh/' + keyName + ' -N "" -C "kali-mcp-key" >/dev/null 2>&1 && \n' +
+                                  '  printf "✅ SSH key generated\\n"\n' +
+                                  'else\n' +
+                                  '  printf "✅ SSH key already exists\\n"\n' +
+                                  'fi && ' +
                                   'printf "\\n" && ' +
-                                  'printf "Note: You will need to manually copy the SSH key to your Kali VM\\n" && ' +
-                                  'printf "Run this command on your Kali VM:\\n" && ' +
-                                  'printf "ssh-copy-id -i ~/.ssh/id_rsa.pub ' + this.kaliUser + '@' + this.kaliIP + '\\n\\n" && ' +
-                                  'printf "SSH key setup complete\\n"';
+                                  'printf "📋 Next steps to complete setup:\\n" && ' +
+                                  'printf "\\n1. Copy this public key to your Kali VM:\\n" && ' +
+                                  'printf "$(cat ~/.ssh/' + keyName + '.pub 2>/dev/null || echo "Key not found")\\n\\n" && ' +
+                                  'printf "2. In your Kali VM, run these commands:\\n" && ' +
+                                  'printf "   mkdir -p ~/.ssh\\n" && ' +
+                                  'printf "   chmod 700 ~/.ssh\\n" && ' +
+                                  'printf "   echo \"$(cat ~/.ssh/' + keyName + '.pub 2>/dev/null)\" >> ~/.ssh/authorized_keys\\n" && ' +
+                                  'printf "   chmod 600 ~/.ssh/authorized_keys\\n\\n" && ' +
+                                  'printf "3. Ensure SSH service is running in Kali VM:\\n" && ' +
+                                  'printf "   sudo systemctl enable ssh\\n" && ' +
+                                  'printf "   sudo systemctl start ssh\\n\\n" && ' +
+                                  'printf "4. Test the connection manually:\\n" && ' +
+                                  'printf "   ssh -i ~/.ssh/' + keyName + ' -o ConnectTimeout=5 ' + this.kaliUser + '@' + this.kaliIP + ' \"echo SSH working\"\\n\\n" && ' +
+                                  'printf "🔧 SSH setup instructions generated!\\n"';
                     
                     this.executeKaliConnectionTest(command);
                 },
                 
                 async executeKaliConnectionTest(command) {
                     try {
+                        // Add timeout to prevent hanging
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+                        
                         const response = await fetch('/api/execute', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ command })
+                            body: JSON.stringify({ command }),
+                            signal: controller.signal
                         });
+                        
+                        clearTimeout(timeoutId);
+                        
+                        if (!response.ok) {
+                            throw new Error('HTTP error! status: ' + response.status);
+                        }
                         
                         const result = await response.json();
                         
@@ -1100,8 +1129,13 @@ function serveHTML(res) {
                         }, 1000);
                         
                     } catch (error) {
-                        this.appendToTerminal('Error: ' + error.message, 'error');
                         this.isRunning = false;
+                        if (error.name === 'AbortError') {
+                            this.appendToTerminal('⚠️ SSH setup timed out. Please check your Kali VM connection and try again.', 'error');
+                        } else {
+                            this.appendToTerminal('Error: ' + error.message, 'error');
+                        }
+                        console.error('SSH connection test error:', error);
                     }
                 },
                 
@@ -1161,11 +1195,22 @@ function serveHTML(res) {
                 
                 async executeStepCommand(command) {
                     try {
+                        // Add timeout to prevent hanging
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+                        
                         const response = await fetch('/api/execute', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ command })
+                            body: JSON.stringify({ command }),
+                            signal: controller.signal
                         });
+                        
+                        clearTimeout(timeoutId);
+                        
+                        if (!response.ok) {
+                            throw new Error('HTTP error! status: ' + response.status);
+                        }
                         
                         const result = await response.json();
                         
@@ -1188,8 +1233,13 @@ function serveHTML(res) {
                         }, 1000);
                         
                     } catch (error) {
-                        this.appendToTerminal('Error: ' + error.message, 'error');
                         this.isRunning = false;
+                        if (error.name === 'AbortError') {
+                            this.appendToTerminal('⚠️ Command timed out. Please try again.', 'error');
+                        } else {
+                            this.appendToTerminal('Error: ' + error.message, 'error');
+                        }
+                        console.error('Step command error:', error);
                     }
                 },
 
