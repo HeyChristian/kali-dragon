@@ -333,32 +333,26 @@ function serveHTML(res) {
                             <p class="text-apple-secondary mb-8 max-w-lg mx-auto">Verify that your system meets all requirements for MCP setup including Claude Desktop</p>
                             
                             <!-- Requirements List -->
-                            <div class="max-w-md mx-auto mb-8 text-left">
-                                <div class="space-y-3">
+                            <div class="max-w-sm mx-auto mb-6">
+                                <div class="space-y-2">
                                     <div class="flex items-center space-x-3">
-                                        <div class="w-6 h-6 rounded-full bg-apple-success flex items-center justify-center">
+                                        <div class="w-5 h-5 rounded-full bg-apple-success flex items-center justify-center">
                                             <span class="text-xs text-white">✓</span>
                                         </div>
-                                        <span class="text-apple-text">Node.js (already running)</span>
+                                        <span class="text-sm text-apple-text">Node.js</span>
                                     </div>
                                     <div class="flex items-center space-x-3">
-                                        <div class="w-6 h-6 rounded-full bg-apple-warning flex items-center justify-center">
+                                        <div class="w-5 h-5 rounded-full bg-apple-warning flex items-center justify-center">
                                             <span class="text-xs">?</span>
                                         </div>
-                                        <span class="text-apple-secondary">Claude Desktop Application</span>
+                                        <span class="text-sm text-apple-secondary">Claude Desktop</span>
                                     </div>
                                     <div class="flex items-center space-x-3">
-                                        <div class="w-6 h-6 rounded-full bg-apple-warning flex items-center justify-center">
+                                        <div class="w-5 h-5 rounded-full bg-apple-warning flex items-center justify-center">
                                             <span class="text-xs">?</span>
                                         </div>
-                                        <span class="text-apple-secondary">SSH Client (for Kali VM connection)</span>
+                                        <span class="text-sm text-apple-secondary">SSH Client</span>
                                     </div>
-                                </div>
-                                
-                                <div class="mt-4 p-3 bg-apple-surface rounded-lg">
-                                    <p class="text-xs text-apple-secondary">
-                                        <span class="text-apple-accent">💡 Note:</span> This setup is pure JavaScript - no Python or Docker needed!
-                                    </p>
                                 </div>
                             </div>
                             
