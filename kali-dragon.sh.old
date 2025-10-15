@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+# 🐉 KALI DRAGON - Universal Web Interface Launcher
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+# Print dragon header
+print_header() {
+    clear
+    echo ""
+    echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${PURPLE}║                                                              ║${NC}"
+    echo -e "${PURPLE}║          🐉 KALI DRAGON - THE ULTIMATE MCP TOOL 🐉          ║${NC}"
+    echo -e "${PURPLE}║                                                              ║${NC}"
+    echo -e "${PURPLE}║                    WEB INTERFACE v3.0                      ║${NC}"
+    echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${CYAN}🌐 Universal Web Interface - Works on macOS, Windows & Linux${NC}"
+    echo ""
+}
+
+print_success() { echo -e "${GREEN}✅ $1${NC}"; }
+print_error() { echo -e "${RED}❌ $1${NC}"; }
+print_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
+
+# Main function
+main() {
+    print_header
+    
+    # Check if Python is available
+    if ! command -v python3 >/dev/null 2>&1; then
+        print_error "Python3 not found!"
+        print_info "Please install Python 3 to use Kali Dragon"
+        echo ""
+        print_info "Visit: https://www.python.org/downloads/"
+        exit 1
+    fi
+    
+    # Check if web interface exists
+    if [ ! -f "kali-dragon-web.py" ]; then
+        print_error "Web interface not found: kali-dragon-web.py"
+        exit 1
+    fi
+    
+    print_info "Starting Kali Dragon Web Interface..."
+    echo ""
+    
+    # Launch web interface
+    python3 kali-dragon-web.py
+}
+
+# Handle command line arguments
+case "${1:-}" in
+    --help|-h)
+        print_header
+        echo -e "${GREEN}🐉 KALI DRAGON HELP${NC}"
+        echo ""
+        echo -e "${CYAN}USAGE:${NC}"
+        echo "  ./kali-dragon.sh          # Launch web interface"
+        echo "  ./kali-dragon.sh --help   # Show this help"
+        echo ""
+        echo -e "${CYAN}FEATURES:${NC}"
+        echo "  • Universal web interface (works everywhere)"
+        echo "  • Setup guide for beginners"
+        echo "  • Automatic website launcher"
+        echo "  • System requirement checker"
+        echo "  • Cross-platform compatibility"
+        echo ""
+        echo -e "${CYAN}REQUIREMENTS:${NC}"
+        echo "  • Python 3.6+"
+        echo "  • Web browser"
+        echo ""
+        echo -e "${PURPLE}Ready to unleash the Dragon? Just run: ./kali-dragon.sh${NC}"
+        exit 0
+        ;;
+    --version|-v)
+        print_header
+        echo -e "${GREEN}🐉 Kali Dragon v3.0 - Web Edition${NC}"
+        echo -e "${CYAN}Universal web interface for all platforms${NC}"
+        exit 0
+        ;;
+esac
+
+# Run main function
+main "$@"
+
+# Show setup guide
+show_guide() {
+    print_header
+    echo -e "${GREEN}📚 KALI DRAGON SETUP GUIDE${NC}"
+    echo ""
+    echo "1. 📱 Install UTM: https://mac.getutm.app/"
+    echo "2. 🐧 Download Kali: https://www.kali.org/get-kali/"
+    echo "3. 🐳 Install Docker: https://orbstack.dev/"
+    echo "4. 🤖 Get Claude Desktop: https://claude.ai/desktop"
+    echo ""
+    echo "Once you have these installed, run the full wizard!"
+}
+
+# Open websites
+open_websites() {
+    echo -e "${CYAN}🌐 Opening important websites...${NC}"
+    
+    open "https://mac.getutm.app/"
+    open "https://www.kali.org/get-kali/"
+    open "https://orbstack.dev/"
+    open "https://claude.ai/desktop"
+    
+    print_success "All websites opened in your browser!"
+}
+
+# Show help
+show_help() {
+    print_header
+    echo -e "${GREEN}🐉 KALI DRAGON HELP${NC}"
+    echo ""
+    echo "This is a simple version that works!"
+    echo ""
+    echo "Features:"
+    echo "• Auto-detects GUI capability"
+    echo "• Falls back to terminal menu"
+    echo "• Opens important websites"
+    echo "• Setup guidance"
+    echo ""
+    echo "To use: just run ./kali-dragon-simple.sh"
+}
+
+# Run main function
+main "$@"
