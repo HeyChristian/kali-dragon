@@ -475,7 +475,46 @@ function serveHTML(res) {
                 
                 openDocs() {
                     this.appendToTerminal('📚 Opening documentation...', 'info');
-                    window.open('https://github.com/your-repo/kali-dragon', '_blank');
+                    this.showDocumentationMenu();
+                },
+                
+                showDocumentationMenu() {
+                    const docs = [
+                        { name: 'Quick Start Guide', file: 'QUICK_START.md', desc: 'Get up and running in minutes' },
+                        { name: 'Kali VM Setup', file: 'KALI_VM_SETUP.md', desc: 'Complete Kali Linux VM configuration' },
+                        { name: 'MCP Server Setup', file: 'MCP_SERVER_SETUP.md', desc: 'Install and configure MCP server' },
+                        { name: 'Troubleshooting Guide', file: 'TROUBLESHOOTING.md', desc: 'Solve common issues' },
+                        { name: 'Documentation Index', file: 'README.md', desc: 'Complete documentation index' }
+                    ];
+                    
+                    this.appendToTerminal('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                    this.appendToTerminal('📚 AVAILABLE DOCUMENTATION', 'info');
+                    this.appendToTerminal('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                    
+                    docs.forEach((doc, index) => {
+                        this.appendToTerminal((index + 1) + '. ' + doc.name + ' - ' + doc.desc, 'output');
+                    });
+                    
+                    this.appendToTerminal('', 'output');
+                    this.appendToTerminal('💡 Click any document name to open, or type: docs <number>', 'warning');
+                    this.appendToTerminal('   Example: docs 1  (opens Quick Start Guide)', 'warning');
+                    this.appendToTerminal('', 'output');
+                    
+                    // Add clickable links in terminal
+                    docs.forEach((doc, index) => {
+                        const link = document.createElement('div');
+                        link.className = 'text-terminal-success cursor-pointer hover:text-green-300 transition-colors';
+                        link.textContent = '🔗 ' + doc.name + ' - Click to open';
+                        link.onclick = () => this.openDocumentation(doc.file);
+                        document.getElementById('terminal-output').appendChild(link);
+                    });
+                    
+                    document.getElementById('terminal-output').scrollTop = document.getElementById('terminal-output').scrollHeight;
+                },
+                
+                openDocumentation(filename) {
+                    this.appendToTerminal('📖 Opening ' + filename + '...', 'info');
+                    window.open('/api/docs/' + filename, '_blank');
                 },
                 
                 resetConfig() {
@@ -541,14 +580,14 @@ function serveHTML(res) {
                 
                 clearTerminal() {
                     const output = document.getElementById('terminal-output');
-                    output.innerHTML = \`
-                        <div class="text-terminal-success mb-1">🐉 Kali Dragon MCP Terminal v4.0 - Dark Mode</div>
-                        <div class="text-terminal-info mb-1">💡 Main control interface for Kali Linux MCP setup</div>
-                        <div class="text-terminal-warning mb-1">⚡ Powered by pure Node.js - no dependencies!</div>
-                        <div class="text-gray-500 mb-2">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
-                        <div class="text-terminal-text mb-1">🚀 Ready to start your Kali Linux MCP setup</div>
-                        <div class="text-gray-400 mb-4">   Type 'help' for available commands or use Quick Actions below</div>
-                    \`;
+                    output.innerHTML = [
+                        '<div class="text-terminal-success mb-1">🐉 Kali Dragon MCP Terminal v4.0 - Dark Mode</div>',
+                        '<div class="text-terminal-info mb-1">💡 Main control interface for Kali Linux MCP setup</div>',
+                        '<div class="text-terminal-warning mb-1">⚡ Powered by pure Node.js - no dependencies!</div>',
+                        '<div class="text-gray-500 mb-2">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>',
+                        '<div class="text-terminal-text mb-1">🚀 Ready to start your Kali Linux MCP setup</div>',
+                        '<div class="text-gray-400 mb-4">   Type \'help\' for available commands or use Quick Actions below</div>'
+                    ].join('\n');
                 },
                 
                 sleep(ms) {
@@ -564,9 +603,136 @@ function serveHTML(res) {
     res.end(html);
 }
 
-// Handle API requests (same as before)
+// Serve documentation files
+function serveDocumentation(res, docPath) {
+    const fs = require('fs');
+    const path = require('path');
+    
+    // Security: prevent directory traversal
+    const safePath = path.join(__dirname, '..', 'docs', path.basename(docPath));
+    
+    try {
+        const content = fs.readFileSync(safePath, 'utf8');
+        
+        // Create HTML page to display markdown - using string concatenation to avoid template literal issues
+        const htmlContent = '<!DOCTYPE html>' +
+        '<html lang="en" class="dark">' +
+        '<head>' +
+        '    <meta charset="UTF-8">' +
+        '    <meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+        '    <title>📚 Kali Dragon Documentation</title>' +
+        '    <script src="https://cdn.tailwindcss.com"></script>' +
+        '    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>' +
+        '    <style>' +
+        '        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }' +
+        '        .glass-dark { background: rgba(17, 17, 17, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }' +
+        '        .markdown-content { line-height: 1.6; color: #ffffff; }' +
+        '        .markdown-content h1 { font-size: 2.5rem; margin: 1.5rem 0; color: #00ff41; font-weight: bold; }' +
+        '        .markdown-content h2 { font-size: 2rem; margin: 1.5rem 0; color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 0.5rem; }' +
+        '        .markdown-content h3 { font-size: 1.5rem; margin: 1rem 0; color: #81C784; font-weight: 600; }' +
+        '        .markdown-content h4 { font-size: 1.25rem; margin: 1rem 0; color: #A5D6A7; font-weight: 600; }' +
+        '        .markdown-content p { margin: 1rem 0; }' +
+        '        .markdown-content code { background: rgba(0,255,65,0.1); padding: 0.2rem 0.4rem; border-radius: 4px; color: #00ff41; font-family: "JetBrains Mono", monospace; }' +
+        '        .markdown-content pre { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; overflow-x: auto; margin: 1.5rem 0; border: 1px solid #333; }' +
+        '        .markdown-content pre code { background: transparent; color: #00ff41; }' +
+        '        .markdown-content a { color: #4CAF50; text-decoration: underline; transition: color 0.3s; }' +
+        '        .markdown-content a:hover { color: #66BB6A; }' +
+        '        .markdown-content ul, .markdown-content ol { margin: 1rem 0; padding-left: 2rem; }' +
+        '        .markdown-content li { margin: 0.5rem 0; }' +
+        '        .markdown-content blockquote { border-left: 4px solid #4CAF50; margin: 1rem 0; padding-left: 1rem; font-style: italic; background: rgba(76, 175, 80, 0.1); border-radius: 4px; padding: 1rem; }' +
+        '        .markdown-content table { width: 100%; border-collapse: collapse; margin: 1rem 0; }' +
+        '        .markdown-content th, .markdown-content td { border: 1px solid #333; padding: 0.75rem; text-align: left; }' +
+        '        .markdown-content th { background: rgba(76, 175, 80, 0.2); font-weight: 600; }' +
+        '        .markdown-content strong { color: #00ff41; font-weight: 600; }' +
+        '        .markdown-content em { color: #81C784; font-style: italic; }' +
+        '    </style>' +
+        '</head>' +
+        '<body class="gradient-bg min-h-screen text-white font-mono">' +
+        '    <div class="max-w-5xl mx-auto px-4 py-8">' +
+        '        <div class="glass-dark rounded-xl p-8">' +
+        '            <div class="flex items-center justify-between mb-6">' +
+        '                <div class="flex items-center space-x-3">' +
+        '                    <div class="text-2xl">📚</div>' +
+        '                    <h1 class="text-2xl font-bold text-terminal-text">Kali Dragon Documentation</h1>' +
+        '                </div>' +
+        '                <div class="flex space-x-2">' +
+        '                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm transition-colors">' +
+        '                        🖨️ Print' +
+        '                    </button>' +
+        '                    <button onclick="window.close()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-sm transition-colors">' +
+        '                        ← Back' +
+        '                    </button>' +
+        '                </div>' +
+        '            </div>' +
+        '            <div id="markdown-content" class="markdown-content"></div>' +
+        '        </div>' +
+        '    </div>' +
+        '    <script>' +
+        '        // Convert markdown to HTML' +
+        '        const markdownContent = ' + JSON.stringify(content) + ';' +
+        '        document.getElementById("markdown-content").innerHTML = marked.parse(markdownContent);' +
+        '        ' +
+        '        // Open external links in new tab' +
+        '        document.querySelectorAll("#markdown-content a[href^=\"http\"]").forEach(link => {' +
+        '            link.target = "_blank";' +
+        '            link.rel = "noopener noreferrer";' +
+        '        });' +
+        '        ' +
+        '        // Handle internal documentation links' +
+        '        document.querySelectorAll("#markdown-content a[href$=\".md\"]").forEach(link => {' +
+        '            const href = link.getAttribute("href");' +
+        '            if (!href.startsWith("http")) {' +
+        '                link.onclick = (e) => {' +
+        '                    e.preventDefault();' +
+        '                    window.open("/api/docs/" + href, "_blank");' +
+        '                };' +
+        '            }' +
+        '        });' +
+        '        ' +
+        '        // Add syntax highlighting for code blocks' +
+        '        document.querySelectorAll("pre code").forEach(block => {' +
+        '            block.style.fontSize = "14px";' +
+        '            block.style.lineHeight = "1.4";' +
+        '        });' +
+        '    </script>' +
+        '</body>' +
+        '</html>';
+        
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(htmlContent);
+    } catch (error) {
+        // Return 404 with styled error page
+        const errorHtml = `<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation Not Found</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>.gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }</style>
+</head>
+<body class="gradient-bg min-h-screen text-white font-mono flex items-center justify-center">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold mb-4">😵 404</h1>
+        <p class="text-xl mb-4">Documentation not found</p>
+        <button onclick="window.close()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">
+            ← Back to Kali Dragon
+        </button>
+    </div>
+</body>
+</html>`;
+        
+        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.end(errorHtml);
+    }
+}
+
+// Handle API requests
 function handleAPI(req, res, pathname) {
-    if (pathname === '/api/execute' && req.method === 'POST') {
+    if (pathname.startsWith('/api/docs/')) {
+        const docName = pathname.replace('/api/docs/', '');
+        serveDocumentation(res, docName);
+    } else if (pathname === '/api/execute' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => body += chunk);
         req.on('end', () => {

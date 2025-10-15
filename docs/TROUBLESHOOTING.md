@@ -1,0 +1,514 @@
+# 🔧 Troubleshooting Guide
+
+This guide helps you resolve common issues when using Kali Dragon.
+
+## Quick Diagnosis
+
+### Check System Status
+In the Kali Dragon terminal, run:
+```bash
+# System information
+echo "=== SYSTEM INFO ==="
+uname -a
+echo "Node.js: $(node --version)"
+echo "Python: $(python3 --version 2>/dev/null || echo 'Not found')"
+echo "Docker: $(docker --version 2>/dev/null || echo 'Not found')"
+
+# Network connectivity
+echo -e "\n=== NETWORK ==="
+ping -c 3 google.com
+echo "Local IP: $(hostname -I | awk '{print $1}')"
+
+# Port status
+echo -e "\n=== PORTS ==="
+netstat -tlnp | grep :8000 || echo "Port 8000 not listening"
+```
+
+## Common Issues
+
+### 1. Browser Won't Open Automatically
+
+**Symptoms:**
+- Setup script completes but browser doesn't open
+- Terminal shows server running but no browser window
+
+**Solutions:**
+
+**Check if port is already in use:**
+```bash
+# Find what's using port 8000
+lsof -i :8000
+
+# Kill the process (replace PID with actual number)
+kill -9 <PID>
+
+# Restart Kali Dragon
+./setup.sh
+```
+
+**Manual browser opening:**
+```bash
+# macOS
+open http://localhost:8000
+
+# Linux
+xdg-open http://localhost:8000
+
+# Windows (WSL)
+cmd.exe /c start http://localhost:8000
+```
+
+**Try different port:**
+```bash
+# Set custom port
+export PORT=8080
+./setup.sh
+```
+
+### 2. Node.js Not Found
+
+**Symptoms:**
+- Error: "Node.js not found"
+- Setup script fails immediately
+
+**Solutions:**
+
+**Install Node.js (macOS):**
+```bash
+# Using Homebrew (recommended)
+brew install node
+
+# Using MacPorts
+sudo port install nodejs18
+
+# Direct download
+# Visit: https://nodejs.org/en/download/
+```
+
+**Install Node.js (Linux):**
+```bash
+# Ubuntu/Debian
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# CentOS/RHEL
+curl -fsSL https://rpm.nodesource.com/setup_lts.x | sudo bash -
+sudo yum install -y nodejs
+
+# Arch Linux
+sudo pacman -S nodejs npm
+```
+
+**Install Node.js (Windows):**
+```bash
+# Using Chocolatey
+choco install nodejs
+
+# Using Scoop
+scoop install nodejs
+
+# Direct download
+# Visit: https://nodejs.org/en/download/
+```
+
+### 3. Permission Denied Errors
+
+**Symptoms:**
+- "Permission denied" when running setup.sh
+- File access errors
+
+**Solutions:**
+
+**Make script executable:**
+```bash
+chmod +x setup.sh
+```
+
+**Fix ownership issues:**
+```bash
+# Fix ownership of project directory
+sudo chown -R $USER:$USER /path/to/kali-dragon
+
+# Fix permissions
+chmod -R 755 /path/to/kali-dragon
+```
+
+**Run with appropriate permissions:**
+```bash
+# Usually avoid sudo, but if needed:
+sudo ./setup.sh
+```
+
+### 4. Terminal Commands Not Working
+
+**Symptoms:**
+- Commands typed in web terminal don't execute
+- No output from commands
+- API errors in browser console
+
+**Solutions:**
+
+**Check server status:**
+```bash
+# Verify server is running
+curl http://localhost:8000/api/status
+
+# Check server logs (if running in terminal)
+# Look for any error messages
+```
+
+**Browser console debugging:**
+```javascript
+// Open browser developer tools (F12)
+// Check console for errors like:
+// - Network errors
+// - CORS errors  
+// - API connection failures
+```
+
+**Clear browser cache:**
+```bash
+# Hard refresh: Ctrl+F5 or Cmd+Shift+R
+# Or clear browser cache completely
+```
+
+### 5. SSH Connection to Kali VM Fails
+
+**Symptoms:**
+- "Connection refused" when testing SSH
+- "Permission denied" errors
+- "Host key verification failed"
+
+**Solutions:**
+
+**Check SSH service on Kali VM:**
+```bash
+# In Kali VM terminal
+sudo systemctl status ssh
+sudo systemctl start ssh
+sudo systemctl enable ssh
+```
+
+**Test network connectivity:**
+```bash
+# From host machine
+ping 192.168.1.100  # Replace with your VM IP
+
+# Test SSH port
+telnet 192.168.1.100 22
+nc -zv 192.168.1.100 22
+```
+
+**Fix SSH host key issues:**
+```bash
+# Remove old host key
+ssh-keygen -R 192.168.1.100
+
+# Accept new host key
+ssh -o StrictHostKeyChecking=no kali@192.168.1.100
+```
+
+**Check SSH configuration:**
+```bash
+# In Kali VM
+sudo nano /etc/ssh/sshd_config
+
+# Ensure these settings:
+# Port 22
+# PasswordAuthentication yes
+# PubkeyAuthentication yes
+# PermitRootLogin no (recommended)
+
+# Restart SSH after changes
+sudo systemctl restart ssh
+```
+
+### 6. Web Interface Loading Issues
+
+**Symptoms:**
+- Blank white page
+- CSS/JS not loading
+- Interface appears broken
+
+**Solutions:**
+
+**Check browser compatibility:**
+- Use modern browser (Chrome 90+, Firefox 88+, Safari 14+)
+- Disable ad blockers temporarily
+- Try incognito/private mode
+
+**Clear browser data:**
+```bash
+# Clear cache, cookies, local storage
+# Or try different browser
+```
+
+**Check network/firewall:**
+```bash
+# Disable firewall temporarily (for testing)
+# macOS
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+
+# Linux (Ubuntu)
+sudo ufw disable
+
+# Windows
+# Disable Windows Firewall temporarily
+```
+
+### 7. Docker Not Working
+
+**Symptoms:**
+- "docker: command not found"
+- "Cannot connect to the Docker daemon"
+- Permission denied errors
+
+**Solutions:**
+
+**Install Docker (macOS):**
+```bash
+# Install OrbStack (recommended)
+brew install orbstack
+
+# Or Docker Desktop
+brew install --cask docker
+```
+
+**Install Docker (Linux):**
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install docker.io docker-compose
+sudo systemctl enable docker
+sudo systemctl start docker
+
+# Add user to docker group
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+**Test Docker:**
+```bash
+docker --version
+docker run hello-world
+```
+
+### 8. Python Issues
+
+**Symptoms:**
+- "python3: command not found"
+- Package installation failures
+- Import errors
+
+**Solutions:**
+
+**Install Python 3:**
+```bash
+# macOS
+brew install python3
+
+# Ubuntu/Debian
+sudo apt install python3 python3-pip
+
+# CentOS/RHEL
+sudo yum install python3 python3-pip
+```
+
+**Fix pip issues:**
+```bash
+# Upgrade pip
+python3 -m pip install --upgrade pip
+
+# Fix PATH issues
+export PATH="$HOME/.local/bin:$PATH"
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+```
+
+## Performance Issues
+
+### Slow Web Interface
+
+**Symptoms:**
+- Slow page loading
+- Delayed command execution
+- Unresponsive interface
+
+**Solutions:**
+
+**Check system resources:**
+```bash
+# Monitor CPU and memory usage
+top
+htop  # If available
+
+# Check disk space
+df -h
+
+# Check network usage
+iftop  # If available
+```
+
+**Optimize browser:**
+- Close unused tabs
+- Disable unnecessary extensions
+- Increase browser memory limits
+
+**Optimize Node.js server:**
+```bash
+# Increase Node.js memory limit
+export NODE_OPTIONS="--max-old-space-size=4096"
+./setup.sh
+```
+
+### High CPU Usage
+
+**Solutions:**
+
+```bash
+# Find resource-intensive processes
+ps aux --sort=-%cpu | head -10
+
+# Kill unnecessary processes
+kill <PID>
+
+# Restart Kali Dragon
+./setup.sh
+```
+
+## Network Issues
+
+### Cannot Access from Other Devices
+
+**Symptoms:**
+- Kali Dragon works on localhost but not from other devices
+- Connection timeout from mobile/tablet
+
+**Solutions:**
+
+**Bind to all interfaces:**
+```bash
+# Edit server.js to bind to 0.0.0.0 instead of localhost
+# Or set environment variable
+export HOST=0.0.0.0
+./setup.sh
+```
+
+**Check firewall:**
+```bash
+# Allow port 8000 through firewall
+# macOS
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add node
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp node
+
+# Linux
+sudo ufw allow 8000
+```
+
+### DNS Resolution Issues
+
+**Solutions:**
+
+```bash
+# Use IP address instead of hostname
+# Instead of: ssh kali@kali-vm
+# Use: ssh kali@192.168.1.100
+
+# Add to /etc/hosts if needed
+echo "192.168.1.100 kali-vm" | sudo tee -a /etc/hosts
+```
+
+## Advanced Debugging
+
+### Enable Debug Mode
+
+**For server debugging:**
+```bash
+# Set debug environment variables
+export DEBUG=*
+export NODE_ENV=development
+./setup.sh
+```
+
+**For network debugging:**
+```bash
+# Enable verbose SSH
+ssh -vvv kali@192.168.1.100
+
+# Monitor network traffic
+sudo tcpdump -i any port 22
+sudo tcpdump -i any port 8000
+```
+
+### Log Analysis
+
+**Check system logs:**
+```bash
+# macOS
+tail -f /var/log/system.log
+
+# Linux
+journalctl -f
+tail -f /var/log/syslog
+```
+
+**Application logs:**
+```bash
+# If running server manually, logs appear in terminal
+# For daemon mode, check application-specific logs
+```
+
+### Memory Debugging
+
+**Monitor memory usage:**
+```bash
+# Real-time memory monitoring
+watch -n 1 'free -m'  # Linux
+watch -n 1 'vm_stat'   # macOS
+
+# Check for memory leaks
+valgrind --tool=memcheck node server.js  # Linux only
+```
+
+## Getting Additional Help
+
+### Collect System Information
+
+Before requesting help, gather this information:
+```bash
+#!/bin/bash
+echo "=== KALI DRAGON DEBUG INFO ==="
+echo "Date: $(date)"
+echo "OS: $(uname -a)"
+echo "Node.js: $(node --version 2>/dev/null || echo 'Not found')"
+echo "Python: $(python3 --version 2>/dev/null || echo 'Not found')"
+echo "Docker: $(docker --version 2>/dev/null || echo 'Not found')"
+echo "Git: $(git --version 2>/dev/null || echo 'Not found')"
+echo
+echo "=== NETWORK ==="
+echo "Hostname: $(hostname)"
+echo "Local IPs: $(hostname -I 2>/dev/null || ifconfig | grep inet)"
+echo "Active ports: $(netstat -tln 2>/dev/null | grep LISTEN)"
+echo
+echo "=== DISK SPACE ==="
+df -h
+echo
+echo "=== MEMORY ==="
+free -m 2>/dev/null || vm_stat
+```
+
+### Report Issues
+
+1. **GitHub Issues**: https://github.com/HeyChristian/kali-dragon/issues
+2. **Include**: System info, error messages, steps to reproduce
+3. **Attach**: Screenshots if interface issue
+4. **Specify**: Your environment (macOS/Linux/Windows)
+
+### Community Support
+
+- **Discussions**: https://github.com/HeyChristian/kali-dragon/discussions
+- **Stack Overflow**: Tag questions with `kali-dragon`
+- **Reddit**: r/KaliLinux community
+
+---
+
+🐉 **Still having issues?** Don't hesitate to reach out for help - the community is here to support you!
