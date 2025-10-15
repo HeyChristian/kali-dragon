@@ -24,6 +24,36 @@ function checkSystemState() {
     return state;
 }
 
+// Basic markdown to HTML converter
+function simpleMarkdownToHtml(markdown) {
+    return markdown
+        // Headers
+        .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+        // Code blocks
+        .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+        // Inline code
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        // Bold
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        // Italic
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        // Links
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+        // Line breaks
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>')
+        // Wrap in paragraphs
+        .replace(/^(.+)/, '<p>$1')
+        .replace(/(.+)$/, '$1</p>')
+        // Lists (basic)
+        .replace(/^- (.*$)/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+        // Horizontal rules
+        .replace(/^---$/gm, '<hr>');
+}
+
 // Serve documentation files
 function serveDocumentation(res, docPath) {
     const fs = require('fs');
@@ -34,116 +64,266 @@ function serveDocumentation(res, docPath) {
     
     try {
         const content = fs.readFileSync(safePath, 'utf8');
+        const htmlContent = simpleMarkdownToHtml(content);
         
-        // Create HTML page to display markdown - using string concatenation to avoid template literal issues
-        const htmlContent = '<!DOCTYPE html>' +
-        '<html lang="en" class="dark">' +
-        '<head>' +
-        '    <meta charset="UTF-8">' +
-        '    <meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-        '    <title>📚 Kali Dragon Documentation</title>' +
-        '    <script src="https://cdn.tailwindcss.com"></script>' +
-        '    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>' +
-        '    <style>' +
-        '        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }' +
-        '        .glass-dark { background: rgba(17, 17, 17, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }' +
-        '        .markdown-content { line-height: 1.6; color: #ffffff; }' +
-        '        .markdown-content h1 { font-size: 2.5rem; margin: 1.5rem 0; color: #00ff41; font-weight: bold; }' +
-        '        .markdown-content h2 { font-size: 2rem; margin: 1.5rem 0; color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 0.5rem; }' +
-        '        .markdown-content h3 { font-size: 1.5rem; margin: 1rem 0; color: #81C784; font-weight: 600; }' +
-        '        .markdown-content h4 { font-size: 1.25rem; margin: 1rem 0; color: #A5D6A7; font-weight: 600; }' +
-        '        .markdown-content p { margin: 1rem 0; }' +
-        '        .markdown-content code { background: rgba(0,255,65,0.1); padding: 0.2rem 0.4rem; border-radius: 4px; color: #00ff41; font-family: "JetBrains Mono", monospace; }' +
-        '        .markdown-content pre { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; overflow-x: auto; margin: 1.5rem 0; border: 1px solid #333; }' +
-        '        .markdown-content pre code { background: transparent; color: #00ff41; }' +
-        '        .markdown-content a { color: #4CAF50; text-decoration: underline; transition: color 0.3s; }' +
-        '        .markdown-content a:hover { color: #66BB6A; }' +
-        '        .markdown-content ul, .markdown-content ol { margin: 1rem 0; padding-left: 2rem; }' +
-        '        .markdown-content li { margin: 0.5rem 0; }' +
-        '        .markdown-content blockquote { border-left: 4px solid #4CAF50; margin: 1rem 0; padding-left: 1rem; font-style: italic; background: rgba(76, 175, 80, 0.1); border-radius: 4px; padding: 1rem; }' +
-        '        .markdown-content table { width: 100%; border-collapse: collapse; margin: 1rem 0; }' +
-        '        .markdown-content th, .markdown-content td { border: 1px solid #333; padding: 0.75rem; text-align: left; }' +
-        '        .markdown-content th { background: rgba(76, 175, 80, 0.2); font-weight: 600; }' +
-        '        .markdown-content strong { color: #00ff41; font-weight: 600; }' +
-        '        .markdown-content em { color: #81C784; font-style: italic; }' +
-        '    </style>' +
-        '</head>' +
-        '<body class="gradient-bg min-h-screen text-white font-mono">' +
-        '    <div class="max-w-5xl mx-auto px-4 py-8">' +
-        '        <div class="glass-dark rounded-xl p-8">' +
-        '            <div class="flex items-center justify-between mb-6">' +
-        '                <div class="flex items-center space-x-3">' +
-        '                    <div class="text-2xl">📚</div>' +
-        '                    <h1 class="text-2xl font-bold text-terminal-text">Kali Dragon Documentation</h1>' +
-        '                </div>' +
-        '                <div class="flex space-x-2">' +
-        '                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm transition-colors">' +
-        '                        🖨️ Print' +
-        '                    </button>' +
-        '                    <button onclick="window.close()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-sm transition-colors">' +
-        '                        ← Back' +
-        '                    </button>' +
-        '                </div>' +
-        '            </div>' +
-        '            <div id="markdown-content" class="markdown-content"></div>' +
-        '        </div>' +
-        '    </div>' +
-        '    <script>' +
-        '        // Convert markdown to HTML' +
-        '        const markdownContent = ' + JSON.stringify(content) + ';' +
-        '        document.getElementById("markdown-content").innerHTML = marked.parse(markdownContent);' +
-        '        ' +
-        '        // Open external links in new tab' +
-        '        document.querySelectorAll("#markdown-content a[href^=\\"http\\"]").forEach(link => {' +
-        '            link.target = "_blank";' +
-        '            link.rel = "noopener noreferrer";' +
-        '        });' +
-        '        ' +
-        '        // Handle internal documentation links' +
-        '        document.querySelectorAll("#markdown-content a[href$=\\".md\\"]").forEach(link => {' +
-        '            const href = link.getAttribute("href");' +
-        '            if (!href.startsWith("http")) {' +
-        '                link.onclick = (e) => {' +
-        '                    e.preventDefault();' +
-        '                    window.open("/api/docs/" + href, "_blank");' +
-        '                };' +
-        '            }' +
-        '        });' +
-        '        ' +
-        '        // Add syntax highlighting for code blocks' +
-        '        document.querySelectorAll("pre code").forEach(block => {' +
-        '            block.style.fontSize = "14px";' +
-        '            block.style.lineHeight = "1.4";' +
-        '        });' +
-        '    </script>' +
-        '</body>' +
-        '</html>';
+        // Create styled HTML page
+        const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 Kali Dragon Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .header {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            color: #00ff41;
+            font-weight: 600;
+        }
+        .header .buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #007aff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056cc;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .content {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        h1 {
+            color: #00ff41;
+            font-size: 2.5rem;
+            margin: 1.5rem 0;
+            font-weight: bold;
+        }
+        h2 {
+            color: #4CAF50;
+            font-size: 1.8rem;
+            margin: 1.5rem 0 1rem 0;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 0.5rem;
+        }
+        h3 {
+            color: #81C784;
+            font-size: 1.4rem;
+            margin: 1rem 0;
+            font-weight: 600;
+        }
+        p {
+            margin: 1rem 0;
+            color: #e0e0e0;
+        }
+        code {
+            background: rgba(0, 255, 65, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            color: #00ff41;
+            font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
+            font-size: 0.9rem;
+        }
+        pre {
+            background: #1e1e1e;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            border: 1px solid #333;
+        }
+        pre code {
+            background: transparent;
+            padding: 0;
+            color: #00ff41;
+        }
+        a {
+            color: #4CAF50;
+            text-decoration: underline;
+            transition: color 0.3s;
+        }
+        a:hover {
+            color: #66BB6A;
+        }
+        ul, ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+        li {
+            margin: 0.5rem 0;
+        }
+        strong {
+            color: #00ff41;
+            font-weight: 600;
+        }
+        em {
+            color: #81C784;
+            font-style: italic;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #4CAF50;
+            margin: 2rem 0;
+        }
+        .loading {
+            text-align: center;
+            color: #00ff41;
+            font-size: 1.2rem;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐉 Kali Dragon Documentation</h1>
+            <div class="buttons">
+                <button class="btn btn-primary" onclick="window.print()">🖨️ Print</button>
+                <button class="btn btn-secondary" onclick="window.close()">← Back</button>
+            </div>
+        </div>
+        <div class="content">
+            ${htmlContent}
+        </div>
+    </div>
+    <script>
+        // Handle external links
+        document.querySelectorAll('a[href^="http"]').forEach(link => {
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+        });
         
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.end(htmlContent);
+        // Handle internal documentation links
+        document.querySelectorAll('a[href$=".md"]').forEach(link => {
+            const href = link.getAttribute('href');
+            if (!href.startsWith('http')) {
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    window.open('/api/docs/' + href, '_blank');
+                };
+            }
+        });
+    </script>
+</body>
+</html>`;
+        
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(fullHtml);
+        
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(fullHtml);
     } catch (error) {
+        console.error('Documentation error:', error);
         // Return 404 with styled error page
-        const errorHtml = '<!DOCTYPE html>' +
-        '<html lang="en" class="dark">' +
-        '<head>' +
-        '    <meta charset="UTF-8">' +
-        '    <meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-        '    <title>Documentation Not Found</title>' +
-        '    <script src="https://cdn.tailwindcss.com"></script>' +
-        '    <style>.gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }</style>' +
-        '</head>' +
-        '<body class="gradient-bg min-h-screen text-white font-mono flex items-center justify-center">' +
-        '    <div class="text-center">' +
-        '        <h1 class="text-4xl font-bold mb-4">😵 404</h1>' +
-        '        <p class="text-xl mb-4">Documentation not found</p>' +
-        '        <button onclick="window.close()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">' +
-        '            ← Back to Kali Dragon' +
-        '        </button>' +
-        '    </div>' +
-        '</body>' +
-        '</html>';
+        const errorHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation Not Found</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            padding: 3rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        h1 {
+            font-size: 3rem;
+            color: #ff3b30;
+            margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: #e0e0e0;
+        }
+        .btn {
+            background: #6c757d;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>😵 404</h1>
+        <p>Documentation file not found</p>
+        <p><code>${docPath}</code></p>
+        <button class="btn" onclick="window.close()">← Back to Kali Dragon</button>
+    </div>
+</body>
+</html>`;
         
-        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(errorHtml);
     }
 }
