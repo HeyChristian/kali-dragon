@@ -26,64 +26,112 @@ function checkSystemState() {
 
 // Basic markdown to HTML converter
 function simpleMarkdownToHtml(markdown) {
-    let html = markdown
-        // Code blocks with language detection and copy button
-        .replace(/```(\w*)?\n?([\s\S]*?)```/g, (match, lang, code) => {
-            const cleanCode = code.trim();
-            const langLabel = lang || 'text';
-            const codeId = 'code-' + Math.random().toString(36).substr(2, 9);
-            return `<div class="code-block">
-                <div class="code-header">
-                    <span class="code-lang">${langLabel}</span>
-                    <button class="copy-btn" onclick="copyCode('${codeId}')" title="Copy code">
-                        📋 Copy
-                    </button>
-                </div>
-                <pre><code id="${codeId}">${cleanCode}</code></pre>
-            </div>`;
-        })
-        // Headers
+    // First, let's process code blocks properly
+    let html = markdown;
+    
+    // Step 1: Process code blocks first to avoid interference
+    const codeBlocks = [];
+    html = html.replace(/```(\w*)?\n([\s\S]*?)```/g, (match, lang, code) => {
+        const cleanCode = code.trim();
+        const langLabel = lang || 'text';
+        const codeId = 'code-' + Math.random().toString(36).substr(2, 9);
+        const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+        
+        codeBlocks.push(`<div class="code-block">
+            <div class="code-header">
+                <span class="code-lang">${langLabel}</span>
+                <button class="copy-btn" onclick="copyCode('${codeId}')" title="Copy code">
+                    📋 Copy
+                </button>
+            </div>
+            <pre><code id="${codeId}">${cleanCode}</code></pre>
+        </div>`);
+        
+        return placeholder;
+    });
+    
+    // Step 2: Process other markdown elements
+    html = html
+        // Headers (in order from most specific to least)
         .replace(/^#### (.*$)/gm, '<h4>$1</h4>')
         .replace(/^### (.*$)/gm, '<h3>$1</h3>')
         .replace(/^## (.*$)/gm, '<h2>$1</h2>')
         .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-        // Inline code
+        // Inline code (but not inside code blocks)
         .replace(/`([^`]+)`/g, '<code>$1</code>')
-        // Bold
+        // Bold and italic
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        // Italic
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/(?<!\*)\*((?!\*)[^*]+)\*(?!\*)/g, '<em>$1</em>')
         // Links
         .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
         // Blockquotes
         .replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>')
         // Horizontal rules
-        .replace(/^---+$/gm, '<hr>')
-        // Lists
-        .replace(/^(\d+)\. (.*$)/gm, '<li>$2</li>')
-        .replace(/^- (.*$)/gm, '<li>$1</li>')
-        // Paragraph processing
-        .split('\n\n')
-        .map(paragraph => {
-            paragraph = paragraph.trim();
-            if (!paragraph) return '';
-            
-            // Don't wrap if it's already a block element
-            if (paragraph.match(/^<(h[1-6]|div|pre|ul|ol|blockquote|hr|li)/)) {
-                return paragraph;
+        .replace(/^---+$/gm, '<hr>');
+    
+    // Step 3: Process paragraphs and lists
+    const lines = html.split('\n');
+    const processedLines = [];
+    let inList = false;
+    let listType = null;
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        if (!line) {
+            if (inList) {
+                processedLines.push(`</${listType}>`);
+                inList = false;
+                listType = null;
+            }
+            processedLines.push('');
+            continue;
+        }
+        
+        // Handle lists
+        if (line.match(/^\d+\. /)) {
+            if (!inList || listType !== 'ol') {
+                if (inList) processedLines.push(`</${listType}>`);
+                processedLines.push('<ol>');
+                inList = true;
+                listType = 'ol';
+            }
+            processedLines.push(line.replace(/^\d+\. (.*)$/, '<li>$1</li>'));
+        } else if (line.match(/^- /)) {
+            if (!inList || listType !== 'ul') {
+                if (inList) processedLines.push(`</${listType}>`);
+                processedLines.push('<ul>');
+                inList = true;
+                listType = 'ul';
+            }
+            processedLines.push(line.replace(/^- (.*)$/, '<li>$1</li>'));
+        } else {
+            if (inList) {
+                processedLines.push(`</${listType}>`);
+                inList = false;
+                listType = null;
             }
             
-            // Handle lists
-            if (paragraph.includes('<li>')) {
-                const isNumbered = paragraph.includes('<li>') && paragraph.match(/^\d+\./m);
-                const tag = isNumbered ? 'ol' : 'ul';
-                return `<${tag}>${paragraph}</${tag}>`;
+            // Don't wrap if it's already an HTML element
+            if (line.match(/^<(h[1-6]|div|pre|blockquote|hr|__CODE_BLOCK_)/)) {
+                processedLines.push(line);
+            } else {
+                processedLines.push(`<p>${line}</p>`);
             }
-            
-            // Wrap in paragraph
-            return `<p>${paragraph}</p>`;
-        })
-        .join('\n');
+        }
+    }
+    
+    // Close any open list
+    if (inList) {
+        processedLines.push(`</${listType}>`);
+    }
+    
+    html = processedLines.join('\n');
+    
+    // Step 4: Restore code blocks
+    codeBlocks.forEach((codeBlock, index) => {
+        html = html.replace(`__CODE_BLOCK_${index}__`, codeBlock);
+    });
     
     return html;
 }
@@ -139,7 +187,7 @@ function serveDocumentation(res, docPath) {
         }
         .header h1 {
             font-size: 1rem;
-            color: #4CAF50;
+            color: #007aff;
             font-weight: 500;
             display: flex;
             align-items: center;
@@ -180,26 +228,26 @@ function serveDocumentation(res, docPath) {
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         h1 {
-            color: #4CAF50;
+            color: #ffffff;
             font-size: 1.4rem;
             margin: 1rem 0 0.5rem 0;
             font-weight: 600;
         }
         h2 {
-            color: #66BB6A;
+            color: #007aff;
             font-size: 1.1rem;
             margin: 1rem 0 0.5rem 0;
-            border-bottom: 1px solid #66BB6A;
+            border-bottom: 1px solid #007aff;
             padding-bottom: 0.2rem;
         }
         h3 {
-            color: #81C784;
+            color: #34c759;
             font-size: 1rem;
             margin: 0.8rem 0 0.4rem 0;
             font-weight: 500;
         }
         h4 {
-            color: #A5D6A7;
+            color: #8e8e93;
             font-size: 0.9rem;
             margin: 0.6rem 0 0.3rem 0;
             font-weight: 500;
@@ -211,10 +259,10 @@ function serveDocumentation(res, docPath) {
             line-height: 1.4;
         }
         code {
-            background: rgba(76, 175, 80, 0.15);
+            background: rgba(255, 255, 255, 0.1);
             padding: 0.15rem 0.3rem;
             border-radius: 3px;
-            color: #81C784;
+            color: #ffffff;
             font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
             font-size: 0.8rem;
         }
@@ -240,7 +288,7 @@ function serveDocumentation(res, docPath) {
             font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
         }
         .copy-btn {
-            background: #4CAF50;
+            background: #007aff;
             color: white;
             border: none;
             padding: 0.2rem 0.4rem;
@@ -251,11 +299,11 @@ function serveDocumentation(res, docPath) {
             margin-left: auto;
         }
         .copy-btn:hover {
-            background: #45a049;
+            background: #0056cc;
         }
         .copy-btn.copied {
-            background: #00ff41;
-            color: #000;
+            background: #34c759;
+            color: white;
         }
         pre {
             background: transparent;
@@ -268,17 +316,17 @@ function serveDocumentation(res, docPath) {
         pre code {
             background: transparent;
             padding: 0;
-            color: #81C784;
+            color: #ffffff;
             font-size: 0.75rem;
         }
         a {
-            color: #4CAF50;
+            color: #007aff;
             text-decoration: underline;
             transition: color 0.3s;
             font-size: 0.85rem;
         }
         a:hover {
-            color: #66BB6A;
+            color: #0056cc;
         }
         ul, ol {
             margin: 0.6rem 0;
@@ -290,11 +338,11 @@ function serveDocumentation(res, docPath) {
             line-height: 1.4;
         }
         strong {
-            color: #66BB6A;
+            color: #ffffff;
             font-weight: 600;
         }
         em {
-            color: #81C784;
+            color: #8e8e93;
             font-style: italic;
         }
         hr {
