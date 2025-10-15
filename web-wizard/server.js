@@ -26,13 +26,27 @@ function checkSystemState() {
 
 // Basic markdown to HTML converter
 function simpleMarkdownToHtml(markdown) {
-    return markdown
+    let html = markdown
+        // Code blocks with language detection and copy button
+        .replace(/```(\w*)?\n?([\s\S]*?)```/g, (match, lang, code) => {
+            const cleanCode = code.trim();
+            const langLabel = lang || 'text';
+            const codeId = 'code-' + Math.random().toString(36).substr(2, 9);
+            return `<div class="code-block">
+                <div class="code-header">
+                    <span class="code-lang">${langLabel}</span>
+                    <button class="copy-btn" onclick="copyCode('${codeId}')" title="Copy code">
+                        📋 Copy
+                    </button>
+                </div>
+                <pre><code id="${codeId}">${cleanCode}</code></pre>
+            </div>`;
+        })
         // Headers
+        .replace(/^#### (.*$)/gm, '<h4>$1</h4>')
         .replace(/^### (.*$)/gm, '<h3>$1</h3>')
         .replace(/^## (.*$)/gm, '<h2>$1</h2>')
         .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-        // Code blocks
-        .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
         // Inline code
         .replace(/`([^`]+)`/g, '<code>$1</code>')
         // Bold
@@ -41,17 +55,37 @@ function simpleMarkdownToHtml(markdown) {
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         // Links
         .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-        // Line breaks
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br>')
-        // Wrap in paragraphs
-        .replace(/^(.+)/, '<p>$1')
-        .replace(/(.+)$/, '$1</p>')
-        // Lists (basic)
-        .replace(/^- (.*$)/gm, '<li>$1</li>')
-        .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+        // Blockquotes
+        .replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>')
         // Horizontal rules
-        .replace(/^---$/gm, '<hr>');
+        .replace(/^---+$/gm, '<hr>')
+        // Lists
+        .replace(/^(\d+)\. (.*$)/gm, '<li>$2</li>')
+        .replace(/^- (.*$)/gm, '<li>$1</li>')
+        // Paragraph processing
+        .split('\n\n')
+        .map(paragraph => {
+            paragraph = paragraph.trim();
+            if (!paragraph) return '';
+            
+            // Don't wrap if it's already a block element
+            if (paragraph.match(/^<(h[1-6]|div|pre|ul|ol|blockquote|hr|li)/)) {
+                return paragraph;
+            }
+            
+            // Handle lists
+            if (paragraph.includes('<li>')) {
+                const isNumbered = paragraph.includes('<li>') && paragraph.match(/^\d+\./m);
+                const tag = isNumbered ? 'ol' : 'ul';
+                return `<${tag}>${paragraph}</${tag}>`;
+            }
+            
+            // Wrap in paragraph
+            return `<p>${paragraph}</p>`;
+        })
+        .join('\n');
+    
+    return html;
 }
 
 // Serve documentation files
@@ -81,31 +115,35 @@ function serveDocumentation(res, docPath) {
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
             color: #ffffff;
             line-height: 1.6;
             min-height: 100vh;
+            font-size: 14px;
         }
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 1.5rem;
         }
         .header {
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(28, 28, 30, 0.85);
             backdrop-filter: blur(20px);
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         .header h1 {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             color: #00ff41;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         .header .buttons {
             display: flex;
@@ -114,9 +152,9 @@ function serveDocumentation(res, docPath) {
         .btn {
             padding: 0.5rem 1rem;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             font-weight: 500;
             transition: all 0.2s;
         }
@@ -135,34 +173,42 @@ function serveDocumentation(res, docPath) {
             background: #5a6268;
         }
         .content {
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(28, 28, 30, 0.85);
             backdrop-filter: blur(20px);
-            border-radius: 15px;
+            border-radius: 12px;
             padding: 2rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         h1 {
             color: #00ff41;
-            font-size: 2.5rem;
-            margin: 1.5rem 0;
+            font-size: 2rem;
+            margin: 1.5rem 0 1rem 0;
             font-weight: bold;
         }
         h2 {
             color: #4CAF50;
-            font-size: 1.8rem;
+            font-size: 1.4rem;
             margin: 1.5rem 0 1rem 0;
             border-bottom: 2px solid #4CAF50;
             padding-bottom: 0.5rem;
         }
         h3 {
             color: #81C784;
-            font-size: 1.4rem;
-            margin: 1rem 0;
+            font-size: 1.1rem;
+            margin: 1rem 0 0.5rem 0;
+            font-weight: 600;
+        }
+        h4 {
+            color: #A5D6A7;
+            font-size: 1rem;
+            margin: 1rem 0 0.5rem 0;
             font-weight: 600;
         }
         p {
-            margin: 1rem 0;
+            margin: 0.8rem 0;
             color: #e0e0e0;
+            font-size: 0.9rem;
+            line-height: 1.5;
         }
         code {
             background: rgba(0, 255, 65, 0.1);
@@ -170,20 +216,60 @@ function serveDocumentation(res, docPath) {
             border-radius: 4px;
             color: #00ff41;
             font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+        }
+        .code-block {
+            position: relative;
+            background: #1e1e1e;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border: 1px solid #333;
+            overflow: hidden;
+        }
+        .code-block .code-header {
+            background: #333;
+            padding: 0.5rem 1rem;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+        .code-block .code-lang {
+            color: #888;
+            font-size: 0.75rem;
+            font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
+        }
+        .copy-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: auto;
+        }
+        .copy-btn:hover {
+            background: #45a049;
+        }
+        .copy-btn.copied {
+            background: #00ff41;
+            color: #000;
         }
         pre {
-            background: #1e1e1e;
-            padding: 1.5rem;
-            border-radius: 8px;
+            background: transparent;
+            padding: 1rem;
+            margin: 0;
             overflow-x: auto;
-            margin: 1.5rem 0;
-            border: 1px solid #333;
+            font-size: 0.8rem;
+            line-height: 1.4;
         }
         pre code {
             background: transparent;
             padding: 0;
             color: #00ff41;
+            font-size: 0.8rem;
         }
         a {
             color: #4CAF50;
@@ -194,11 +280,12 @@ function serveDocumentation(res, docPath) {
             color: #66BB6A;
         }
         ul, ol {
-            margin: 1rem 0;
-            padding-left: 2rem;
+            margin: 0.8rem 0;
+            padding-left: 1.5rem;
         }
         li {
-            margin: 0.5rem 0;
+            margin: 0.3rem 0;
+            font-size: 0.9rem;
         }
         strong {
             color: #00ff41;
@@ -211,13 +298,31 @@ function serveDocumentation(res, docPath) {
         hr {
             border: none;
             border-top: 1px solid #4CAF50;
-            margin: 2rem 0;
+            margin: 1.5rem 0;
         }
-        .loading {
-            text-align: center;
-            color: #00ff41;
-            font-size: 1.2rem;
-            padding: 2rem;
+        blockquote {
+            border-left: 4px solid #4CAF50;
+            margin: 1rem 0;
+            padding-left: 1rem;
+            font-style: italic;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 4px;
+            padding: 1rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 0.5rem;
+            text-align: left;
+        }
+        th {
+            background: rgba(76, 175, 80, 0.2);
+            font-weight: 600;
         }
     </style>
 </head>
@@ -235,6 +340,60 @@ function serveDocumentation(res, docPath) {
         </div>
     </div>
     <script>
+        // Copy code function
+        function copyCode(codeId) {
+            const codeElement = document.getElementById(codeId);
+            const copyBtn = codeElement.closest('.code-block').querySelector('.copy-btn');
+            
+            if (codeElement) {
+                const text = codeElement.textContent;
+                
+                // Try to use the modern clipboard API
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        showCopySuccess(copyBtn);
+                    }).catch(() => {
+                        fallbackCopyTextToClipboard(text, copyBtn);
+                    });
+                } else {
+                    fallbackCopyTextToClipboard(text, copyBtn);
+                }
+            }
+        }
+        
+        // Fallback copy function
+        function fallbackCopyTextToClipboard(text, btn) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopySuccess(btn);
+            } catch (err) {
+                console.error('Fallback: Could not copy text', err);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        // Show copy success feedback
+        function showCopySuccess(btn) {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '✅ Copied!';
+            btn.classList.add('copied');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('copied');
+            }, 2000);
+        }
+        
         // Handle external links
         document.querySelectorAll('a[href^="http"]').forEach(link => {
             link.target = '_blank';
@@ -251,12 +410,22 @@ function serveDocumentation(res, docPath) {
                 };
             }
         });
+        
+        // Add smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
     </script>
 </body>
 </html>`;
-        
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(fullHtml);
         
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(fullHtml);
