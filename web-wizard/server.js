@@ -24,7 +24,7 @@ function checkSystemState() {
     return state;
 }
 
-// Serve the main HTML page with ultra-modern dark UI
+// Serve the main HTML page with Apple-style modern UI
 function serveHTML(res) {
     const state = checkSystemState();
     
@@ -33,10 +33,8 @@ function serveHTML(res) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐉 Kali Dragon Terminal</title>
-    <!-- Tailwind CSS CDN with dark mode -->
+    <title>🐉 Kali Dragon Setup</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Alpine.js for interactivity -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <script>
@@ -45,32 +43,25 @@ function serveHTML(res) {
             theme: {
                 extend: {
                     colors: {
-                        terminal: {
-                            bg: '#0a0a0a',
-                            surface: '#111111',
-                            border: '#1f1f1f',
-                            text: '#00ff41',
-                            prompt: '#ff6b35',
-                            error: '#ff4757',
-                            warning: '#ffa502',
-                            info: '#3742fa',
-                            success: '#2ed573'
-                        },
-                        dark: {
-                            50: '#f8fafc',
-                            100: '#f1f5f9',
-                            200: '#e2e8f0',
-                            300: '#cbd5e1',
-                            400: '#94a3b8',
-                            500: '#64748b',
-                            600: '#475569',
-                            700: '#334155',
-                            800: '#1e293b',
-                            900: '#0f172a'
+                        apple: {
+                            bg: '#000000',
+                            surface: '#1c1c1e',
+                            card: '#2c2c2e', 
+                            accent: '#007aff',
+                            success: '#34c759',
+                            warning: '#ff9500',
+                            error: '#ff3b30',
+                            text: '#ffffff',
+                            secondary: '#98989a'
                         }
                     },
                     fontFamily: {
-                        'mono': ['JetBrains Mono', 'Fira Code', 'SF Mono', 'Monaco', 'monospace']
+                        'system': ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                        'mono': ['SF Mono', 'Monaco', 'Menlo', 'Consolas', 'monospace']
+                    },
+                    borderRadius: {
+                        'apple': '12px',
+                        'apple-lg': '16px'
                     }
                 }
             }
@@ -78,129 +69,114 @@ function serveHTML(res) {
     </script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
         body {
-            font-family: 'JetBrains Mono', monospace;
-            background: #0a0a0a;
-            overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
         
-        .terminal-glow {
-            box-shadow: 
-                0 0 20px rgba(0, 255, 65, 0.1),
-                inset 0 0 20px rgba(0, 255, 65, 0.05);
-        }
-        
-        .neon-border {
-            border: 1px solid rgba(0, 255, 65, 0.3);
-            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
-        }
-        
-        .glass-dark {
-            background: rgba(17, 17, 17, 0.8);
-            backdrop-filter: blur(12px);
+        .glass-effect {
+            background: rgba(28, 28, 30, 0.85);
+            backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .status-dot {
-            animation: pulse 2s infinite;
+        .progress-bar {
+            transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        .step-card {
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         
-        .terminal-scrollbar::-webkit-scrollbar {
-            width: 8px;
+        .step-card:hover {
+            transform: translateY(-2px);
         }
         
-        .terminal-scrollbar::-webkit-scrollbar-track {
-            background: #111111;
+        .terminal-window {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
         }
         
-        .terminal-scrollbar::-webkit-scrollbar-thumb {
-            background: #333333;
-            border-radius: 4px;
+        .terminal-header {
+            background: linear-gradient(to bottom, #404040, #2a2a2a);
+            border-bottom: 1px solid #333;
         }
         
-        .terminal-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #444444;
+        .traffic-light {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .red { background: #ff5f57; }
+        .yellow { background: #ffbd2e; }
+        .green { background: #28ca42; }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .pulse-glow {
+            animation: pulseGlow 2s infinite;
+        }
+        
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 122, 255, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(0, 122, 255, 0.5); }
+        }
+        
+        .scrollbar-hidden::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .scrollbar-hidden {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
 
-<body class="bg-terminal-bg text-white min-h-screen" x-data="kaliDragon()">
-    <!-- Compact Header with System Status -->
-    <header class="glass-dark border-b border-terminal-border sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-3">
+<body class="bg-apple-bg text-apple-text min-h-screen font-system" x-data="kaliDragon()">
+    <!-- Modern Header -->
+    <header class="glass-effect sticky top-0 z-50 border-b border-gray-700">
+        <div class="max-w-6xl mx-auto px-6 py-4">
             <div class="flex items-center justify-between">
-                <!-- Logo & Title -->
-                <div class="flex items-center space-x-3">
-                    <div class="text-2xl animate-bounce">🐉</div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-3xl">🐉</div>
                     <div>
-                        <h1 class="text-xl font-bold text-terminal-text">Kali Dragon</h1>
-                        <span class="text-xs text-gray-400">MCP Terminal Interface</span>
+                        <h1 class="text-2xl font-semibold text-apple-text">Kali Dragon</h1>
+                        <p class="text-apple-secondary text-sm">Automated MCP Setup Assistant</p>
                     </div>
                 </div>
                 
-                <!-- Compact System Status Dashboard -->
-                <div class="hidden md:flex items-center space-x-4">
-                    <!-- OS Status -->
-                    <div class="flex items-center space-x-2 px-3 py-1 rounded-lg bg-terminal-surface">
-                        <span class="w-2 h-2 bg-terminal-success rounded-full status-dot"></span>
-                        <span class="text-xs font-mono">${state.os}</span>
+                <!-- Progress Overview -->
+                <div class="hidden md:flex items-center space-x-6">
+                    <div class="text-right">
+                        <div class="text-sm font-medium" x-text="`Step ${currentStep} of ${totalSteps}`"></div>
+                        <div class="text-xs text-apple-secondary" x-text="steps[currentStep - 1]?.title || 'Getting Started'"></div>
                     </div>
-                    
-                    <!-- Node Status -->
-                    <div class="flex items-center space-x-2 px-3 py-1 rounded-lg bg-terminal-surface">
-                        <span class="w-2 h-2 bg-terminal-success rounded-full status-dot"></span>
-                        <span class="text-xs font-mono">${state.nodeVersion}</span>
-                    </div>
-                    
-                    <!-- Dependencies Status -->
-                    <div class="flex items-center space-x-1">
-                        <div class="w-2 h-2 bg-terminal-warning rounded-full status-dot" title="Python"></div>
-                        <div class="w-2 h-2 bg-terminal-warning rounded-full status-dot" title="Docker"></div>
-                        <div class="w-2 h-2 bg-terminal-error rounded-full status-dot" title="Kali"></div>
-                    </div>
-                    
-                    <!-- Connection Status -->
-                    <div class="text-xs text-gray-400">
-                        <span class="inline-block w-1 h-1 bg-terminal-success rounded-full animate-pulse mr-1"></span>
-                        Server Active
-                    </div>
-                </div>
-                
-                <!-- Mobile Status Indicator -->
-                <div class="md:hidden">
-                    <button @click="showMobileStatus = !showMobileStatus" class="p-2 rounded-lg bg-terminal-surface">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Mobile Status Panel -->
-            <div x-show="showMobileStatus" x-transition class="mt-4 p-4 bg-terminal-surface rounded-lg md:hidden">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="text-center">
-                        <div class="w-3 h-3 bg-terminal-success rounded-full mx-auto mb-1"></div>
-                        <div class="text-xs">${state.os}</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="w-3 h-3 bg-terminal-success rounded-full mx-auto mb-1"></div>
-                        <div class="text-xs">Node.js</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="w-3 h-3 bg-terminal-warning rounded-full mx-auto mb-1"></div>
-                        <div class="text-xs">Python</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="w-3 h-3 bg-terminal-error rounded-full mx-auto mb-1"></div>
-                        <div class="text-xs">Kali VM</div>
+                    <div class="w-24 bg-gray-700 rounded-full h-2">
+                        <div class="bg-apple-accent h-2 rounded-full progress-bar" :style="`width: ${(currentStep / totalSteps) * 100}%`"></div>
                     </div>
                 </div>
             </div>
