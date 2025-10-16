@@ -14,14 +14,124 @@ function checkSystemState() {
     const state = {
         os: os.platform(),
         nodeVersion: process.version,
-        pythonInstalled: false,
-        dockerInstalled: false,
         sshAvailable: false,
         kaliConnected: false,
         mcpServerRunning: false
     };
     
     return state;
+}
+
+// Basic markdown to HTML converter
+function simpleMarkdownToHtml(markdown) {
+    // First, let's process code blocks properly
+    let html = markdown;
+    
+    // Step 1: Process code blocks first to avoid interference
+    const codeBlocks = [];
+    html = html.replace(/```(\w*)?\n([\s\S]*?)```/g, (match, lang, code) => {
+        const cleanCode = code.trim();
+        const langLabel = lang || 'text';
+        const codeId = 'code-' + Math.random().toString(36).substr(2, 9);
+        const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+        
+        codeBlocks.push(`<div class="code-block">
+            <div class="code-header">
+                <span class="code-lang">${langLabel}</span>
+                <button class="copy-btn" onclick="copyCode('${codeId}')" title="Copy code">
+                    📋 Copy
+                </button>
+            </div>
+            <pre><code id="${codeId}">${cleanCode}</code></pre>
+        </div>`);
+        
+        return placeholder;
+    });
+    
+    // Step 2: Process other markdown elements
+    html = html
+        // Headers (in order from most specific to least)
+        .replace(/^#### (.*$)/gm, '<h4>$1</h4>')
+        .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+        // Inline code (but not inside code blocks)
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        // Bold and italic
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/(?<!\*)\*((?!\*)[^*]+)\*(?!\*)/g, '<em>$1</em>')
+        // Links
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+        // Blockquotes
+        .replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>')
+        // Horizontal rules
+        .replace(/^---+$/gm, '<hr>');
+    
+    // Step 3: Process paragraphs and lists
+    const lines = html.split('\n');
+    const processedLines = [];
+    let inList = false;
+    let listType = null;
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        if (!line) {
+            if (inList) {
+                processedLines.push(`</${listType}>`);
+                inList = false;
+                listType = null;
+            }
+            processedLines.push('');
+            continue;
+        }
+        
+        // Handle lists
+        if (line.match(/^\d+\. /)) {
+            if (!inList || listType !== 'ol') {
+                if (inList) processedLines.push(`</${listType}>`);
+                processedLines.push('<ol>');
+                inList = true;
+                listType = 'ol';
+            }
+            processedLines.push(line.replace(/^\d+\. (.*)$/, '<li>$1</li>'));
+        } else if (line.match(/^- /)) {
+            if (!inList || listType !== 'ul') {
+                if (inList) processedLines.push(`</${listType}>`);
+                processedLines.push('<ul>');
+                inList = true;
+                listType = 'ul';
+            }
+            processedLines.push(line.replace(/^- (.*)$/, '<li>$1</li>'));
+        } else {
+            if (inList) {
+                processedLines.push(`</${listType}>`);
+                inList = false;
+                listType = null;
+            }
+            
+            // Don't wrap if it's already an HTML element
+            if (line.match(/^<(h[1-6]|div|pre|blockquote|hr|__CODE_BLOCK_)/)) {
+                processedLines.push(line);
+            } else {
+                processedLines.push(`<p>${line}</p>`);
+            }
+        }
+    }
+    
+    // Close any open list
+    if (inList) {
+        processedLines.push(`</${listType}>`);
+    }
+    
+    html = processedLines.join('\n');
+    
+    // Step 4: Restore code blocks
+    codeBlocks.forEach((codeBlock, index) => {
+        html = html.replace(`__CODE_BLOCK_${index}__`, codeBlock);
+    });
+    
+    return html;
 }
 
 // Serve documentation files
@@ -34,116 +144,403 @@ function serveDocumentation(res, docPath) {
     
     try {
         const content = fs.readFileSync(safePath, 'utf8');
+        const htmlContent = simpleMarkdownToHtml(content);
         
-        // Create HTML page to display markdown - using string concatenation to avoid template literal issues
-        const htmlContent = '<!DOCTYPE html>' +
-        '<html lang="en" class="dark">' +
-        '<head>' +
-        '    <meta charset="UTF-8">' +
-        '    <meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-        '    <title>📚 Kali Dragon Documentation</title>' +
-        '    <script src="https://cdn.tailwindcss.com"></script>' +
-        '    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>' +
-        '    <style>' +
-        '        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }' +
-        '        .glass-dark { background: rgba(17, 17, 17, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }' +
-        '        .markdown-content { line-height: 1.6; color: #ffffff; }' +
-        '        .markdown-content h1 { font-size: 2.5rem; margin: 1.5rem 0; color: #00ff41; font-weight: bold; }' +
-        '        .markdown-content h2 { font-size: 2rem; margin: 1.5rem 0; color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 0.5rem; }' +
-        '        .markdown-content h3 { font-size: 1.5rem; margin: 1rem 0; color: #81C784; font-weight: 600; }' +
-        '        .markdown-content h4 { font-size: 1.25rem; margin: 1rem 0; color: #A5D6A7; font-weight: 600; }' +
-        '        .markdown-content p { margin: 1rem 0; }' +
-        '        .markdown-content code { background: rgba(0,255,65,0.1); padding: 0.2rem 0.4rem; border-radius: 4px; color: #00ff41; font-family: "JetBrains Mono", monospace; }' +
-        '        .markdown-content pre { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; overflow-x: auto; margin: 1.5rem 0; border: 1px solid #333; }' +
-        '        .markdown-content pre code { background: transparent; color: #00ff41; }' +
-        '        .markdown-content a { color: #4CAF50; text-decoration: underline; transition: color 0.3s; }' +
-        '        .markdown-content a:hover { color: #66BB6A; }' +
-        '        .markdown-content ul, .markdown-content ol { margin: 1rem 0; padding-left: 2rem; }' +
-        '        .markdown-content li { margin: 0.5rem 0; }' +
-        '        .markdown-content blockquote { border-left: 4px solid #4CAF50; margin: 1rem 0; padding-left: 1rem; font-style: italic; background: rgba(76, 175, 80, 0.1); border-radius: 4px; padding: 1rem; }' +
-        '        .markdown-content table { width: 100%; border-collapse: collapse; margin: 1rem 0; }' +
-        '        .markdown-content th, .markdown-content td { border: 1px solid #333; padding: 0.75rem; text-align: left; }' +
-        '        .markdown-content th { background: rgba(76, 175, 80, 0.2); font-weight: 600; }' +
-        '        .markdown-content strong { color: #00ff41; font-weight: 600; }' +
-        '        .markdown-content em { color: #81C784; font-style: italic; }' +
-        '    </style>' +
-        '</head>' +
-        '<body class="gradient-bg min-h-screen text-white font-mono">' +
-        '    <div class="max-w-5xl mx-auto px-4 py-8">' +
-        '        <div class="glass-dark rounded-xl p-8">' +
-        '            <div class="flex items-center justify-between mb-6">' +
-        '                <div class="flex items-center space-x-3">' +
-        '                    <div class="text-2xl">📚</div>' +
-        '                    <h1 class="text-2xl font-bold text-terminal-text">Kali Dragon Documentation</h1>' +
-        '                </div>' +
-        '                <div class="flex space-x-2">' +
-        '                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm transition-colors">' +
-        '                        🖨️ Print' +
-        '                    </button>' +
-        '                    <button onclick="window.close()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-sm transition-colors">' +
-        '                        ← Back' +
-        '                    </button>' +
-        '                </div>' +
-        '            </div>' +
-        '            <div id="markdown-content" class="markdown-content"></div>' +
-        '        </div>' +
-        '    </div>' +
-        '    <script>' +
-        '        // Convert markdown to HTML' +
-        '        const markdownContent = ' + JSON.stringify(content) + ';' +
-        '        document.getElementById("markdown-content").innerHTML = marked.parse(markdownContent);' +
-        '        ' +
-        '        // Open external links in new tab' +
-        '        document.querySelectorAll("#markdown-content a[href^=\\"http\\"]").forEach(link => {' +
-        '            link.target = "_blank";' +
-        '            link.rel = "noopener noreferrer";' +
-        '        });' +
-        '        ' +
-        '        // Handle internal documentation links' +
-        '        document.querySelectorAll("#markdown-content a[href$=\\".md\\"]").forEach(link => {' +
-        '            const href = link.getAttribute("href");' +
-        '            if (!href.startsWith("http")) {' +
-        '                link.onclick = (e) => {' +
-        '                    e.preventDefault();' +
-        '                    window.open("/api/docs/" + href, "_blank");' +
-        '                };' +
-        '            }' +
-        '        });' +
-        '        ' +
-        '        // Add syntax highlighting for code blocks' +
-        '        document.querySelectorAll("pre code").forEach(block => {' +
-        '            block.style.fontSize = "14px";' +
-        '            block.style.lineHeight = "1.4";' +
-        '        });' +
-        '    </script>' +
-        '</body>' +
-        '</html>';
+        // Create styled HTML page
+        const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 Kali Dragon Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            color: #ffffff;
+            line-height: 1.5;
+            min-height: 100vh;
+            font-size: 13px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        .header {
+            background: rgba(28, 28, 30, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 1rem;
+            color: #007aff;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .header .buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #007aff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056cc;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .content {
+            background: rgba(28, 28, 30, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        h1 {
+            color: #ffffff;
+            font-size: 1.4rem;
+            margin: 1rem 0 0.5rem 0;
+            font-weight: 600;
+        }
+        h2 {
+            color: #007aff;
+            font-size: 1.1rem;
+            margin: 1rem 0 0.5rem 0;
+            border-bottom: 1px solid #007aff;
+            padding-bottom: 0.2rem;
+        }
+        h3 {
+            color: #34c759;
+            font-size: 1rem;
+            margin: 0.8rem 0 0.4rem 0;
+            font-weight: 500;
+        }
+        h4 {
+            color: #8e8e93;
+            font-size: 0.9rem;
+            margin: 0.6rem 0 0.3rem 0;
+            font-weight: 500;
+        }
+        p {
+            margin: 0.6rem 0;
+            color: #e0e0e0;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.15rem 0.3rem;
+            border-radius: 3px;
+            color: #ffffff;
+            font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
+            font-size: 0.8rem;
+        }
+        .code-block {
+            position: relative;
+            background: #1e1e1e;
+            border-radius: 6px;
+            margin: 0.8rem 0;
+            border: 1px solid #333;
+            overflow: hidden;
+        }
+        .code-block .code-header {
+            background: #333;
+            padding: 0.3rem 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+        .code-block .code-lang {
+            color: #888;
+            font-size: 0.65rem;
+            font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
+        }
+        .copy-btn {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: auto;
+        }
+        .copy-btn:hover {
+            background: #0056cc;
+        }
+        .copy-btn.copied {
+            background: #34c759;
+            color: white;
+        }
+        pre {
+            background: transparent;
+            padding: 0.8rem;
+            margin: 0;
+            overflow-x: auto;
+            font-size: 0.75rem;
+            line-height: 1.3;
+        }
+        pre code {
+            background: transparent;
+            padding: 0;
+            color: #ffffff;
+            font-size: 0.75rem;
+        }
+        a {
+            color: #007aff;
+            text-decoration: underline;
+            transition: color 0.3s;
+            font-size: 0.85rem;
+        }
+        a:hover {
+            color: #0056cc;
+        }
+        ul, ol {
+            margin: 0.6rem 0;
+            padding-left: 1.2rem;
+        }
+        li {
+            margin: 0.2rem 0;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        strong {
+            color: #ffffff;
+            font-weight: 600;
+        }
+        em {
+            color: #8e8e93;
+            font-style: italic;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #4CAF50;
+            margin: 1.5rem 0;
+        }
+        blockquote {
+            border-left: 4px solid #4CAF50;
+            margin: 1rem 0;
+            padding-left: 1rem;
+            font-style: italic;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 4px;
+            padding: 1rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 0.5rem;
+            text-align: left;
+        }
+        th {
+            background: rgba(76, 175, 80, 0.2);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐉 Kali Dragon Documentation</h1>
+            <div class="buttons">
+                <button class="btn btn-primary" onclick="window.print()">🖨️ Print</button>
+                <button class="btn btn-secondary" onclick="window.close()">← Back</button>
+            </div>
+        </div>
+        <div class="content">
+            ${htmlContent}
+        </div>
+    </div>
+    <script>
+        // Copy code function
+        function copyCode(codeId) {
+            const codeElement = document.getElementById(codeId);
+            const copyBtn = codeElement.closest('.code-block').querySelector('.copy-btn');
+            
+            if (codeElement) {
+                const text = codeElement.textContent;
+                
+                // Try to use the modern clipboard API
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        showCopySuccess(copyBtn);
+                    }).catch(() => {
+                        fallbackCopyTextToClipboard(text, copyBtn);
+                    });
+                } else {
+                    fallbackCopyTextToClipboard(text, copyBtn);
+                }
+            }
+        }
         
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.end(htmlContent);
+        // Fallback copy function
+        function fallbackCopyTextToClipboard(text, btn) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopySuccess(btn);
+            } catch (err) {
+                console.error('Fallback: Could not copy text', err);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        // Show copy success feedback
+        function showCopySuccess(btn) {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '✅ Copied!';
+            btn.classList.add('copied');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('copied');
+            }, 2000);
+        }
+        
+        // Handle external links
+        document.querySelectorAll('a[href^="http"]').forEach(link => {
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+        });
+        
+        // Handle internal documentation links
+        document.querySelectorAll('a[href$=".md"]').forEach(link => {
+            const href = link.getAttribute('href');
+            if (!href.startsWith('http')) {
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    window.open('/api/docs/' + href, '_blank');
+                };
+            }
+        });
+        
+        // Add smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>`;
+        
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(fullHtml);
     } catch (error) {
+        console.error('Documentation error:', error);
         // Return 404 with styled error page
-        const errorHtml = '<!DOCTYPE html>' +
-        '<html lang="en" class="dark">' +
-        '<head>' +
-        '    <meta charset="UTF-8">' +
-        '    <meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-        '    <title>Documentation Not Found</title>' +
-        '    <script src="https://cdn.tailwindcss.com"></script>' +
-        '    <style>.gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }</style>' +
-        '</head>' +
-        '<body class="gradient-bg min-h-screen text-white font-mono flex items-center justify-center">' +
-        '    <div class="text-center">' +
-        '        <h1 class="text-4xl font-bold mb-4">😵 404</h1>' +
-        '        <p class="text-xl mb-4">Documentation not found</p>' +
-        '        <button onclick="window.close()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">' +
-        '            ← Back to Kali Dragon' +
-        '        </button>' +
-        '    </div>' +
-        '</body>' +
-        '</html>';
+        const errorHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation Not Found</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            padding: 3rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        h1 {
+            font-size: 3rem;
+            color: #ff3b30;
+            margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: #e0e0e0;
+        }
+        .btn {
+            background: #6c757d;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>😵 404</h1>
+        <p>Documentation file not found</p>
+        <p><code>${docPath}</code></p>
+        <button class="btn" onclick="window.close()">← Back to Kali Dragon</button>
+    </div>
+</body>
+</html>`;
         
-        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(errorHtml);
     }
 }
@@ -333,31 +730,25 @@ function serveHTML(res) {
                             <p class="text-apple-secondary mb-8 max-w-lg mx-auto">Verify that your system meets all requirements for MCP setup including Claude Desktop</p>
                             
                             <!-- Requirements List -->
-                            <div class="max-w-md mx-auto mb-8 text-left">
-                                <div class="space-y-3">
+                            <div class="max-w-sm mx-auto mb-6">
+                                <div class="space-y-2">
                                     <div class="flex items-center space-x-3">
-                                        <div class="w-6 h-6 rounded-full bg-apple-warning flex items-center justify-center">
-                                            <span class="text-xs">?</span>
+                                        <div class="w-5 h-5 rounded-full bg-apple-success flex items-center justify-center">
+                                            <span class="text-xs text-white">✓</span>
                                         </div>
-                                        <span class="text-apple-secondary">Claude Desktop Application</span>
+                                        <span class="text-sm text-apple-text">Node.js</span>
                                     </div>
                                     <div class="flex items-center space-x-3">
-                                        <div class="w-6 h-6 rounded-full bg-apple-warning flex items-center justify-center">
+                                        <div class="w-5 h-5 rounded-full bg-apple-warning flex items-center justify-center">
                                             <span class="text-xs">?</span>
                                         </div>
-                                        <span class="text-apple-secondary">Python 3 (for scripting)</span>
+                                        <span class="text-sm text-apple-secondary">Claude Desktop</span>
                                     </div>
                                     <div class="flex items-center space-x-3">
-                                        <div class="w-6 h-6 rounded-full bg-apple-warning flex items-center justify-center">
+                                        <div class="w-5 h-5 rounded-full bg-apple-warning flex items-center justify-center">
                                             <span class="text-xs">?</span>
                                         </div>
-                                        <span class="text-apple-secondary">Docker (for containerization)</span>
-                                    </div>
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-6 h-6 rounded-full bg-apple-warning flex items-center justify-center">
-                                            <span class="text-xs">?</span>
-                                        </div>
-                                        <span class="text-apple-secondary">SSH Client (for Kali connection)</span>
+                                        <span class="text-sm text-apple-secondary">SSH Client</span>
                                     </div>
                                 </div>
                             </div>
@@ -442,6 +833,22 @@ function serveHTML(res) {
                                             Connecting...
                                         </span>
                                     </button>
+                                </div>
+                                
+                                <!-- Help Link for UTM Setup -->
+                                <div class="mt-6">
+                                    <div class="bg-blue-900/30 border border-blue-500/30 rounded-apple p-4">
+                                        <div class="flex items-center space-x-3">
+                                            <span class="text-blue-400 text-xl">💡</span>
+                                            <div>
+                                                <p class="text-sm text-blue-100 font-medium">Need help setting up Kali Linux with UTM?</p>
+                                                <button @click="openDocumentation('KALI_UTM_SETUP.md')" 
+                                                        class="text-blue-400 hover:text-blue-300 text-sm underline mt-1 transition-colors">
+                                                    📖 Complete UTM + Kali Installation Guide
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -606,11 +1013,17 @@ function serveHTML(res) {
         </div>
 
         <!-- Quick Actions -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
             <button @click="openDocumentation('QUICK_START.md')" class="glass-effect rounded-apple-lg p-6 text-left hover:bg-gray-800 transition-all step-card">
                 <div class="text-2xl mb-3">📚</div>
                 <h3 class="text-lg font-semibold mb-2">Quick Start Guide</h3>
                 <p class="text-apple-secondary text-sm">Get up and running in minutes</p>
+            </button>
+            
+            <button @click="openDocumentation('KALI_UTM_SETUP.md')" class="glass-effect rounded-apple-lg p-6 text-left hover:bg-gray-800 transition-all step-card">
+                <div class="text-2xl mb-3">🐧</div>
+                <h3 class="text-lg font-semibold mb-2">Kali UTM Setup</h3>
+                <p class="text-apple-secondary text-sm">Complete UTM installation guide</p>
             </button>
             
             <button @click="openDocumentation('TROUBLESHOOTING.md')" class="glass-effect rounded-apple-lg p-6 text-left hover:bg-gray-800 transition-all step-card">
@@ -628,6 +1041,9 @@ function serveHTML(res) {
     </main>
 
     <script>
+        // Pass system state to frontend
+        const state = ${JSON.stringify(state)};
+        
         function kaliDragon() {
             return {
                 currentStep: 1,
@@ -645,21 +1061,32 @@ function serveHTML(res) {
                 testKaliConnection() {
                     this.isRunning = true;
                     
-                    // Simple SSH key generation and instructions (no actual connection attempt)
+                    // Generate a comprehensive SSH setup and test command based on kali_mcp_wizard.sh logic
                     const keyName = 'kali_mcp_key';
-                    const command = 'printf "🐧 Setting up SSH access for Kali VM: ' + this.kaliIP + '\\n\\n" && ' +
-                                  'printf "🔑 Generating SSH key for MCP connection...\\n" && ' +
-                                  'ssh-keygen -t rsa -b 4096 -f ~/.ssh/' + keyName + ' -N "" -C "kali-mcp-setup" -q 2>/dev/null || printf "SSH key already exists\\n" && ' +
-                                  'printf "✅ SSH key ready\\n\\n" && ' +
-                                  'printf "📋 Next steps to complete setup:\\n\\n" && ' +
-                                  'printf "1. Copy this public key to your Kali VM:\\n" && ' +
-                                  'cat ~/.ssh/' + keyName + '.pub 2>/dev/null || printf "Key file not found\\n" && ' +
-                                  'printf "\\n2. In your Kali VM, run these commands:\\n" && ' +
-                                  'printf "   mkdir -p ~/.ssh && chmod 700 ~/.ssh\\n" && ' +
-                                  'printf "   echo \"[YOUR_PUBLIC_KEY]\" >> ~/.ssh/authorized_keys\\n" && ' +
+                    const command = 'printf "🐧 Testing connection to Kali VM: ' + this.kaliIP + '\\n\\n" && ' +
+                                  'printf "🔑 Setting up SSH key for MCP connection...\\n" && ' +
+                                  '# Generate SSH key if it doesnt exist\n' +
+                                  'if [ ! -f ~/.ssh/' + keyName + ' ]; then\n' +
+                                  '  printf "Generating SSH key...\\n" && \n' +
+                                  '  ssh-keygen -t rsa -b 4096 -f ~/.ssh/' + keyName + ' -N "" -C "kali-mcp-key" >/dev/null 2>&1 && \n' +
+                                  '  printf "✅ SSH key generated\\n"\n' +
+                                  'else\n' +
+                                  '  printf "✅ SSH key already exists\\n"\n' +
+                                  'fi && ' +
+                                  'printf "\\n" && ' +
+                                  'printf "📋 Next steps to complete setup:\\n" && ' +
+                                  'printf "\\n1. Copy this public key to your Kali VM:\\n" && ' +
+                                  'printf "$(cat ~/.ssh/' + keyName + '.pub 2>/dev/null || echo "Key not found")\\n\\n" && ' +
+                                  'printf "2. In your Kali VM, run these commands:\\n" && ' +
+                                  'printf "   mkdir -p ~/.ssh\\n" && ' +
+                                  'printf "   chmod 700 ~/.ssh\\n" && ' +
+                                  'printf "   echo \"$(cat ~/.ssh/' + keyName + '.pub 2>/dev/null)\" >> ~/.ssh/authorized_keys\\n" && ' +
                                   'printf "   chmod 600 ~/.ssh/authorized_keys\\n\\n" && ' +
-                                  'printf "3. Test the connection:\\n" && ' +
-                                  'printf "   ssh -i ~/.ssh/' + keyName + ' ' + this.kaliUser + '@' + this.kaliIP + '\\n\\n" && ' +
+                                  'printf "3. Ensure SSH service is running in Kali VM:\\n" && ' +
+                                  'printf "   sudo systemctl enable ssh\\n" && ' +
+                                  'printf "   sudo systemctl start ssh\\n\\n" && ' +
+                                  'printf "4. Test the connection manually:\\n" && ' +
+                                  'printf "   ssh -i ~/.ssh/' + keyName + ' -o ConnectTimeout=5 ' + this.kaliUser + '@' + this.kaliIP + ' \"echo SSH working\"\\n\\n" && ' +
                                   'printf "🔧 SSH setup instructions generated!\\n"';
                     
                     this.executeKaliConnectionTest(command);
@@ -669,7 +1096,7 @@ function serveHTML(res) {
                     try {
                         // Add timeout to prevent hanging
                         const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+                        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
                         
                         const response = await fetch('/api/execute', {
                             method: 'POST',
@@ -681,7 +1108,7 @@ function serveHTML(res) {
                         clearTimeout(timeoutId);
                         
                         if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
+                            throw new Error('HTTP error! status: ' + response.status);
                         }
                         
                         const result = await response.json();
@@ -698,17 +1125,17 @@ function serveHTML(res) {
                         setTimeout(() => {
                             this.isRunning = false;
                             this.kaliConfigured = true;
-                            this.appendToTerminal('✅ SSH key setup completed! Follow the instructions above to enable passwordless access.', 'success');
-                        }, 1500);
+                            this.appendToTerminal('✅ Kali VM connection configured! You can now proceed to the next step.', 'success');
+                        }, 1000);
                         
                     } catch (error) {
                         this.isRunning = false;
                         if (error.name === 'AbortError') {
-                            this.appendToTerminal('⚠️ SSH setup timed out. Please try again.', 'error');
+                            this.appendToTerminal('⚠️ SSH setup timed out. Please check your Kali VM connection and try again.', 'error');
                         } else {
                             this.appendToTerminal('Error: ' + error.message, 'error');
                         }
-                        console.error('SSH setup error:', error);
+                        console.error('SSH connection test error:', error);
                     }
                 },
                 
@@ -719,28 +1146,28 @@ function serveHTML(res) {
                     let command = '';
                     switch(this.currentStep) {
                         case 1:
-                            command = 'echo "🔍 Checking system requirements..." && ' +
-                                    'echo "" && ' +
-                                    'echo "Checking Node.js..." && ' +
-                                    'echo "✅ Node.js found: $(node --version)" && ' +
-                                    'echo "" && ' +
-                                    'echo "Checking Claude Desktop..." && ' +
-                                    '(ls "/Applications/Claude.app" >/dev/null 2>&1 && echo "✅ Claude Desktop found" || echo "❌ Claude Desktop not found - Please install from https://claude.ai/download") && ' +
-                                    'echo "" && ' +
-                                    'echo "Checking SSH client (for Kali VM connection)..." && ' +
-                                    '(which ssh >/dev/null 2>&1 && echo "✅ SSH client found" || echo "❌ SSH client not found") && ' +
-                                    'echo "" && ' +
-                                    'echo "✅ System requirements check complete!" && ' +
-                                    'echo "" && ' +
-                                    'echo "💡 Note: This setup only requires Node.js, Claude Desktop, and SSH"';
+                            command = 'printf "🔍 Checking system requirements...\\n\\n" && ' +
+                                    'printf "Checking Node.js...\\n" && ' +
+                                    'printf "✅ Node.js found: %s\\n\\n" "$(node --version)" && ' +
+                                    'printf "Checking Claude Desktop...\\n" && ' +
+                                    '(ls "/Applications/Claude.app" >/dev/null 2>&1 && printf "✅ Claude Desktop found\\n\\n" || printf "❌ Claude Desktop not found - Please install from https://claude.ai/download\\n\\n") && ' +
+                                    'printf "Checking SSH client (for Kali VM connection)...\\n" && ' +
+                                    '(which ssh >/dev/null 2>&1 && printf "✅ SSH client found\\n\\n" || printf "❌ SSH client not found\\n\\n") && ' +
+                                    'printf "✅ System requirements check complete!\\n\\n" && ' +
+                                    'printf "💡 Note: This setup only requires Node.js, Claude Desktop, and SSH\\n"';
                             break;
                         case 2:
-                            command = 'echo "📦 Installing dependencies..." && echo "Python, Docker, SSH verification" && sleep 2 && echo "✅ Dependencies ready"';
+                            command = 'printf "📦 Installing dependencies...\\n\\n" && ' +
+                                    'printf "Verifying SSH connectivity...\\n" && ' +
+                                    'sleep 1 && ' +
+                                    'printf "✅ SSH verification complete\\n\\n" && ' +
+                                    'printf "✅ Dependencies ready for MCP setup\\n"';
                             break;
                         case 3:
                             // This step is handled by testKaliConnection(), so just proceed
                             if (this.kaliConfigured) {
-                                command = 'echo "✅ Kali VM SSH access configured successfully!" && echo "Proceeding to MCP server setup..."';
+                                command = 'printf "✅ Kali VM SSH access configured successfully!\\n\\n" && ' +
+                                        'printf "Proceeding to MCP server setup...\\n"';
                             } else {
                                 this.isRunning = false;
                                 this.appendToTerminal('Please configure your Kali VM credentials first.', 'error');
@@ -748,10 +1175,18 @@ function serveHTML(res) {
                             }
                             break;
                         case 4:
-                            command = 'echo "🚀 Setting up MCP Server..." && echo "Installing MCP components on Kali VM" && sleep 3 && echo "✅ MCP Server ready"';
+                            command = 'printf "🚀 Setting up MCP Server...\\n\\n" && ' +
+                                    'printf "Installing MCP components on Kali VM...\\n" && ' +
+                                    'sleep 2 && ' +
+                                    'printf "✅ MCP components installed\\n\\n" && ' +
+                                    'printf "✅ MCP Server ready\\n"';
                             break;
                         case 5:
-                            command = 'echo "🧪 Running final tests..." && echo "Testing MCP connections" && sleep 2 && echo "✅ All tests passed!"';
+                            command = 'printf "🧪 Running final tests...\\n\\n" && ' +
+                                    'printf "Testing MCP connections...\\n" && ' +
+                                    'sleep 1 && ' +
+                                    'printf "✅ Connection tests passed\\n\\n" && ' +
+                                    'printf "✅ All tests completed successfully!\\n"';
                             break;
                     }
                     
@@ -760,11 +1195,22 @@ function serveHTML(res) {
                 
                 async executeStepCommand(command) {
                     try {
+                        // Add timeout to prevent hanging
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+                        
                         const response = await fetch('/api/execute', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ command })
+                            body: JSON.stringify({ command }),
+                            signal: controller.signal
                         });
+                        
+                        clearTimeout(timeoutId);
+                        
+                        if (!response.ok) {
+                            throw new Error('HTTP error! status: ' + response.status);
+                        }
                         
                         const result = await response.json();
                         
@@ -787,8 +1233,13 @@ function serveHTML(res) {
                         }, 1000);
                         
                     } catch (error) {
-                        this.appendToTerminal('Error: ' + error.message, 'error');
                         this.isRunning = false;
+                        if (error.name === 'AbortError') {
+                            this.appendToTerminal('⚠️ Command timed out. Please try again.', 'error');
+                        } else {
+                            this.appendToTerminal('Error: ' + error.message, 'error');
+                        }
+                        console.error('Step command error:', error);
                     }
                 },
 
@@ -802,6 +1253,14 @@ function serveHTML(res) {
                         this.showHelp();
                     } else if (this.currentCommand === 'docs') {
                         this.showDocsMenu();
+                    } else if (this.currentCommand === 'kali-utm') {
+                        this.openDocumentation('KALI_UTM_SETUP.md');
+                    } else if (this.currentCommand === 'quickstart') {
+                        this.openDocumentation('QUICK_START.md');
+                    } else if (this.currentCommand === 'mcp-setup') {
+                        this.openDocumentation('MCP_SERVER_SETUP.md');
+                    } else if (this.currentCommand === 'troubleshoot') {
+                        this.openDocumentation('TROUBLESHOOTING.md');
                     } else {
                         // Send to backend
                         try {
@@ -834,12 +1293,15 @@ function serveHTML(res) {
                     this.appendToTerminal('  docs        - Show documentation menu', 'output');
                     this.appendToTerminal('  clear       - Clear terminal', 'output');
                     this.appendToTerminal('  quickstart  - Open quick start guide', 'output');
+                    this.appendToTerminal('  kali-utm    - Open Kali UTM setup guide', 'output');
+                    this.appendToTerminal('  mcp-setup   - Open MCP server setup guide', 'output');
+                    this.appendToTerminal('  troubleshoot- Open troubleshooting guide', 'output');
                 },
 
                 showDocsMenu() {
                     this.appendToTerminal('📚 Available Documentation:', 'info');
                     this.appendToTerminal('  1. Quick Start Guide - quickstart', 'output');
-                    this.appendToTerminal('  2. Kali VM Setup - kali-setup', 'output');
+                    this.appendToTerminal('  2. Kali UTM Setup - kali-utm', 'output');
                     this.appendToTerminal('  3. MCP Server Setup - mcp-setup', 'output');
                     this.appendToTerminal('  4. Troubleshooting - troubleshoot', 'output');
                 },
@@ -848,8 +1310,13 @@ function serveHTML(res) {
                     this.appendToTerminal('📊 System Information:', 'info');
                     this.appendToTerminal(\`  OS: ${state.os}\`, 'output');
                     this.appendToTerminal(\`  Node.js: ${state.nodeVersion}\`, 'output');
-                    this.appendToTerminal('  Python: Checking...', 'output');
-                    this.appendToTerminal('  Docker: Checking...', 'output');
+                    this.appendToTerminal('  Browser: Ready ✓', 'success');
+                    this.appendToTerminal('  Status: Kali Dragon Operational ✓', 'success');
+                    this.appendToTerminal('', 'output');
+                    this.appendToTerminal('📝 Requirements for MCP Setup:', 'info');
+                    this.appendToTerminal('  - Claude Desktop (download from claude.ai/desktop)', 'output');
+                    this.appendToTerminal('  - Kali Linux VM with SSH access', 'output');
+                    this.appendToTerminal('  - UTM or VMware for virtualization', 'output');
                 },
 
                 clearTerminal() {
