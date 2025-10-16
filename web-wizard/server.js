@@ -24,126 +24,333 @@ function checkSystemState() {
     return state;
 }
 
+// Simple markdown to HTML converter (built-in, no external dependencies)
+function simpleMarkdownToHtml(markdown) {
+    // Step 1: Preserve code blocks first to avoid processing their content
+    const codeBlocks = [];
+    let html = markdown.replace(/```([\s\S]*?)```/g, (match, content) => {
+        const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+        codeBlocks.push(`<pre><code>${content.trim()}</code></pre>`);
+        return placeholder;
+    });
+    
+    // Step 2: Process other markdown elements
+    html = html
+        // Headers (most specific first)
+        .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        // Bold
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        // Italic (but not if it's part of bold)
+        .replace(/(?<!\*)\*((?!\*)[^*]+)\*(?!\*)/g, '<em>$1</em>')
+        // Inline code (preserve)
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        // Links
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+        // Horizontal rule
+        .replace(/^---+$/gim, '<hr>')
+        // Unordered lists
+        .replace(/^- (.+$)/gim, '<li>$1</li>')
+        // Ordered lists  
+        .replace(/^\d+\. (.+$)/gim, '<li>$1</li>');
+    
+    // Step 3: Handle paragraphs and restore code blocks
+    const lines = html.split('\n');
+    const processedLines = [];
+    let inList = false;
+    let listType = null;
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        if (!line) {
+            if (inList) {
+                processedLines.push(`</${listType}>`);
+                inList = false;
+                listType = null;
+            }
+            processedLines.push('');
+            continue;
+        }
+        
+        // Handle lists
+        if (line.startsWith('<li>')) {
+            if (!inList) {
+                // Detect if it's ordered or unordered by looking at original
+                const originalLine = markdown.split('\n')[i] || '';
+                if (originalLine.trim().match(/^\d+\./)) {
+                    processedLines.push('<ol>');
+                    listType = 'ol';
+                } else {
+                    processedLines.push('<ul>');
+                    listType = 'ul';
+                }
+                inList = true;
+            }
+            processedLines.push(line);
+        } else {
+            if (inList) {
+                processedLines.push(`</${listType}>`);
+                inList = false;
+                listType = null;
+            }
+            
+            // Don't wrap if it's already an HTML element or code block placeholder
+            if (line.match(/^<(h[1-6]|hr|__CODE_BLOCK_)/) || line === '') {
+                processedLines.push(line);
+            } else {
+                processedLines.push(`<p>${line}</p>`);
+            }
+        }
+    }
+    
+    // Close any open list
+    if (inList) {
+        processedLines.push(`</${listType}>`);
+    }
+    
+    html = processedLines.join('\n');
+    
+    // Step 4: Restore code blocks
+    codeBlocks.forEach((codeBlock, index) => {
+        html = html.replace(`__CODE_BLOCK_${index}__`, codeBlock);
+    });
+    
+    return html;
+}
+
 // Serve documentation files
 function serveDocumentation(res, docPath) {
-    const fs = require('fs');
-    const path = require('path');
-    
     // Security: prevent directory traversal
     const safePath = path.join(__dirname, '..', 'docs', path.basename(docPath));
     
     try {
         const content = fs.readFileSync(safePath, 'utf8');
+        const htmlContent = simpleMarkdownToHtml(content);
         
-        // Create HTML page to display markdown - using string concatenation to avoid template literal issues
-        const htmlContent = '<!DOCTYPE html>' +
-        '<html lang="en" class="dark">' +
-        '<head>' +
-        '    <meta charset="UTF-8">' +
-        '    <meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-        '    <title>📚 Kali Dragon Documentation</title>' +
-        '    <script src="https://cdn.tailwindcss.com"></script>' +
-        '    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>' +
-        '    <style>' +
-        '        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }' +
-        '        .glass-dark { background: rgba(17, 17, 17, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }' +
-        '        .markdown-content { line-height: 1.6; color: #ffffff; }' +
-        '        .markdown-content h1 { font-size: 2.5rem; margin: 1.5rem 0; color: #00ff41; font-weight: bold; }' +
-        '        .markdown-content h2 { font-size: 2rem; margin: 1.5rem 0; color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 0.5rem; }' +
-        '        .markdown-content h3 { font-size: 1.5rem; margin: 1rem 0; color: #81C784; font-weight: 600; }' +
-        '        .markdown-content h4 { font-size: 1.25rem; margin: 1rem 0; color: #A5D6A7; font-weight: 600; }' +
-        '        .markdown-content p { margin: 1rem 0; }' +
-        '        .markdown-content code { background: rgba(0,255,65,0.1); padding: 0.2rem 0.4rem; border-radius: 4px; color: #00ff41; font-family: "JetBrains Mono", monospace; }' +
-        '        .markdown-content pre { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; overflow-x: auto; margin: 1.5rem 0; border: 1px solid #333; }' +
-        '        .markdown-content pre code { background: transparent; color: #00ff41; }' +
-        '        .markdown-content a { color: #4CAF50; text-decoration: underline; transition: color 0.3s; }' +
-        '        .markdown-content a:hover { color: #66BB6A; }' +
-        '        .markdown-content ul, .markdown-content ol { margin: 1rem 0; padding-left: 2rem; }' +
-        '        .markdown-content li { margin: 0.5rem 0; }' +
-        '        .markdown-content blockquote { border-left: 4px solid #4CAF50; margin: 1rem 0; padding-left: 1rem; font-style: italic; background: rgba(76, 175, 80, 0.1); border-radius: 4px; padding: 1rem; }' +
-        '        .markdown-content table { width: 100%; border-collapse: collapse; margin: 1rem 0; }' +
-        '        .markdown-content th, .markdown-content td { border: 1px solid #333; padding: 0.75rem; text-align: left; }' +
-        '        .markdown-content th { background: rgba(76, 175, 80, 0.2); font-weight: 600; }' +
-        '        .markdown-content strong { color: #00ff41; font-weight: 600; }' +
-        '        .markdown-content em { color: #81C784; font-style: italic; }' +
-        '    </style>' +
-        '</head>' +
-        '<body class="gradient-bg min-h-screen text-white font-mono">' +
-        '    <div class="max-w-5xl mx-auto px-4 py-8">' +
-        '        <div class="glass-dark rounded-xl p-8">' +
-        '            <div class="flex items-center justify-between mb-6">' +
-        '                <div class="flex items-center space-x-3">' +
-        '                    <div class="text-2xl">📚</div>' +
-        '                    <h1 class="text-2xl font-bold text-terminal-text">Kali Dragon Documentation</h1>' +
-        '                </div>' +
-        '                <div class="flex space-x-2">' +
-        '                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm transition-colors">' +
-        '                        🖨️ Print' +
-        '                    </button>' +
-        '                    <button onclick="window.close()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-sm transition-colors">' +
-        '                        ← Back' +
-        '                    </button>' +
-        '                </div>' +
-        '            </div>' +
-        '            <div id="markdown-content" class="markdown-content"></div>' +
-        '        </div>' +
-        '    </div>' +
-        '    <script>' +
-        '        // Convert markdown to HTML' +
-        '        const markdownContent = ' + JSON.stringify(content) + ';' +
-        '        document.getElementById("markdown-content").innerHTML = marked.parse(markdownContent);' +
-        '        ' +
-        '        // Open external links in new tab' +
-        '        document.querySelectorAll("#markdown-content a[href^=\\"http\\"]").forEach(link => {' +
-        '            link.target = "_blank";' +
-        '            link.rel = "noopener noreferrer";' +
-        '        });' +
-        '        ' +
-        '        // Handle internal documentation links' +
-        '        document.querySelectorAll("#markdown-content a[href$=\\".md\\"]").forEach(link => {' +
-        '            const href = link.getAttribute("href");' +
-        '            if (!href.startsWith("http")) {' +
-        '                link.onclick = (e) => {' +
-        '                    e.preventDefault();' +
-        '                    window.open("/api/docs/" + href, "_blank");' +
-        '                };' +
-        '            }' +
-        '        });' +
-        '        ' +
-        '        // Add syntax highlighting for code blocks' +
-        '        document.querySelectorAll("pre code").forEach(block => {' +
-        '            block.style.fontSize = "14px";' +
-        '            block.style.lineHeight = "1.4";' +
-        '        });' +
-        '    </script>' +
-        '</body>' +
-        '</html>';
+        const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐉 Kali Dragon Documentation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            color: #ffffff;
+            line-height: 1.6;
+            min-height: 100vh;
+            font-size: 14px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .header {
+            background: linear-gradient(135deg, rgba(10, 10, 10, 0.95) 0%, rgba(26, 26, 46, 0.95) 50%, rgba(22, 33, 62, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header .title-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .header .dragon-icon {
+            font-size: 2rem;
+            filter: drop-shadow(0 0 10px rgba(0, 122, 255, 0.3));
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            color: #ffffff;
+            font-weight: 600;
+            margin: 0;
+        }
+        .header .subtitle {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin: 0;
+        }
+        .header .buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .btn-primary { background: #007aff; color: white; }
+        .btn-primary:hover { background: #0056cc; }
+        .btn-secondary { background: #48484a; color: white; }
+        .btn-secondary:hover { background: #636366; }
         
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.end(htmlContent);
+        .content {
+            background: rgba(28, 28, 30, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 3rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 { font-size: 2rem; margin: 1.5rem 0; color: #007aff; font-weight: 600; }
+        h2 { font-size: 1.5rem; margin: 1.25rem 0; color: #007aff; border-bottom: 1px solid rgba(0, 122, 255, 0.3); padding-bottom: 0.5rem; font-weight: 500; }
+        h3 { font-size: 1.25rem; margin: 1rem 0; color: #ffffff; font-weight: 500; }
+        p { margin: 0.75rem 0; }
+        code {
+            background: rgba(0, 122, 255, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            color: #007aff;
+            font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            background: #1c1c1e;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        pre code {
+            background: transparent;
+            color: #ffffff;
+            padding: 0;
+        }
+        a { color: #007aff; text-decoration: none; transition: color 0.2s; }
+        a:hover { color: #4a9eff; text-decoration: underline; }
+        ul, ol { margin: 0.75rem 0; padding-left: 1.5rem; }
+        li { margin: 0.25rem 0; }
+        strong { color: #ffffff; font-weight: 600; }
+        em { color: #8e8e93; font-style: italic; }
+        hr { border: none; height: 1px; background: rgba(255, 255, 255, 0.1); margin: 1.5rem 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title-section">
+                <div class="dragon-icon">🐉</div>
+                <div>
+                    <h1>Kali Dragon</h1>
+                    <p class="subtitle">Documentation Center</p>
+                </div>
+            </div>
+            <div class="buttons">
+                <button class="btn btn-primary" onclick="window.print()">🖨️ Print</button>
+                <button class="btn btn-secondary" onclick="window.close()">← Back</button>
+            </div>
+        </div>
+        
+        <div class="content">
+            ${htmlContent}
+        </div>
+    </div>
+    
+    <script>
+        // Open external links in new tab
+        document.querySelectorAll('a[href^="http"]').forEach(link => {
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+        });
+        
+        // Handle internal documentation links
+        document.querySelectorAll('a[href$=".md"]').forEach(link => {
+            const href = link.getAttribute('href');
+            if (!href.startsWith('http')) {
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    window.open('/api/docs/' + href, '_blank');
+                };
+            }
+        });
+    </script>
+</body>
+</html>`;
+        
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(fullHtml);
     } catch (error) {
+        console.error('Documentation error:', error);
         // Return 404 with styled error page
-        const errorHtml = '<!DOCTYPE html>' +
-        '<html lang="en" class="dark">' +
-        '<head>' +
-        '    <meta charset="UTF-8">' +
-        '    <meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-        '    <title>Documentation Not Found</title>' +
-        '    <script src="https://cdn.tailwindcss.com"></script>' +
-        '    <style>.gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }</style>' +
-        '</head>' +
-        '<body class="gradient-bg min-h-screen text-white font-mono flex items-center justify-center">' +
-        '    <div class="text-center">' +
-        '        <h1 class="text-4xl font-bold mb-4">😵 404</h1>' +
-        '        <p class="text-xl mb-4">Documentation not found</p>' +
-        '        <button onclick="window.close()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">' +
-        '            ← Back to Kali Dragon' +
-        '        </button>' +
-        '    </div>' +
-        '</body>' +
-        '</html>';
+        const errorHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation Not Found</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            padding: 3rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        h1 {
+            font-size: 3rem;
+            color: #ff3b30;
+            margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: #e0e0e0;
+        }
+        .btn {
+            background: #6c757d;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>😵 404</h1>
+        <p>Documentation file not found</p>
+        <p><code>${docPath}</code></p>
+        <button class="btn" onclick="window.close()">← Back to Kali Dragon</button>
+    </div>
+</body>
+</html>`;
         
-        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(errorHtml);
     }
 }
