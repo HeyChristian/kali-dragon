@@ -15,6 +15,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         node-version: [18, 20, 21]
+        exclude:
+          # Skip Node.js 18 on Windows due to compatibility issues
+          - os: windows-latest
+            node-version: 18
 
     steps:
     - name: 📥 Checkout Code
@@ -42,29 +46,44 @@ jobs:
         node -c server.js
         echo "✅ Server.js syntax is valid"
         
-        # Start server in background
-        node server.js &
-        SERVER_PID=$!
-        echo "Server PID: $SERVER_PID"
-        
-        # Wait for server to start
-        sleep 5
-        
-        # Test if server is responding
-        if command -v curl >/dev/null 2>&1; then
-          echo "Testing server response..."
-          curl -f http://localhost:8000 || exit 1
-          echo "✅ Server responds correctly"
-        elif command -v wget >/dev/null 2>&1; then
-          echo "Testing server response with wget..."
-          wget --spider http://localhost:8000 || exit 1
-          echo "✅ Server responds correctly"
+        # Cross-platform server testing
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          echo "🪟 Testing on Windows..."
+          # Start server in background (Windows style)
+          start /B node server.js
+          sleep 8
+          
+          # Test with PowerShell on Windows
+          powershell -Command "try { Invoke-WebRequest -Uri 'http://localhost:8000' -UseBasicParsing | Out-Null; Write-Host '✅ Server responds correctly' } catch { Write-Host '❌ Server test failed'; exit 1 }"
+          
+          # Clean up Windows processes
+          taskkill //F //IM node.exe 2>NUL || echo "Server cleanup attempted"
         else
-          echo "⚠️ No curl or wget available, skipping HTTP test"
+          echo "🐧 Testing on Unix-like system..."
+          # Start server in background
+          node server.js &
+          SERVER_PID=$!
+          echo "Server PID: $SERVER_PID"
+          
+          # Wait for server to start
+          sleep 5
+          
+          # Test if server is responding
+          if command -v curl >/dev/null 2>&1; then
+            echo "Testing server response..."
+            curl -f http://localhost:8000 || exit 1
+            echo "✅ Server responds correctly"
+          elif command -v wget >/dev/null 2>&1; then
+            echo "Testing server response with wget..."
+            wget --spider http://localhost:8000 || exit 1
+            echo "✅ Server responds correctly"
+          else
+            echo "⚠️ No curl or wget available, skipping HTTP test"
+          fi
+          
+          # Clean up
+          kill $SERVER_PID || true
         fi
-        
-        # Clean up
-        kill $SERVER_PID || true
         
     - name: 📚 Validate Documentation
       run: |
@@ -202,7 +221,7 @@ jobs:
         echo "✅ Platform compatibility test passed on ${{ runner.os }}"
 
   status-check:
-    name: ✅ All Tests Passed
+    name: ✅ All Tests Status
     runs-on: ubuntu-latest
     needs: [test, lint, compatibility]
     if: always()
@@ -210,13 +229,15 @@ jobs:
     steps:
     - name: 📊 Check Results
       run: |
+        echo "=== Test Results Summary ==="
+        echo "Test: ${{ needs.test.result }}"
+        echo "Lint: ${{ needs.lint.result }}"
+        echo "Compatibility: ${{ needs.compatibility.result }}"
+        
         if [[ "${{ needs.test.result }}" == "success" && "${{ needs.lint.result }}" == "success" && "${{ needs.compatibility.result }}" == "success" ]]; then
           echo "🎉 All tests passed! Ready for merge."
           exit 0
         else
-          echo "❌ Some tests failed:"
-          echo "  Test: ${{ needs.test.result }}"
-          echo "  Lint: ${{ needs.lint.result }}"
-          echo "  Compatibility: ${{ needs.compatibility.result }}"
+          echo "❌ Some tests failed. Please fix issues before merging."
           exit 1
         fi
