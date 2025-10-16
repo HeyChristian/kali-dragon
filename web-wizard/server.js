@@ -406,52 +406,77 @@ function serveHTML(res) {
                             <p class="text-apple-secondary mb-6 max-w-lg mx-auto">Enter your Kali Linux VM credentials to setup passwordless SSH access</p>
                             
                             <!-- Kali Credentials Form -->
-                            <div x-show="!kaliConfigured" class="max-w-md mx-auto mb-8">
-                                <div class="space-y-4">
+                            <div x-show="!kaliConfigured" class="max-w-md mx-auto mb-6">
+                                <div class="grid grid-cols-2 gap-3 mb-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-apple-secondary mb-2">Kali VM IP Address</label>
+                                        <label class="block text-xs font-medium text-apple-secondary mb-1">Kali VM IP</label>
                                         <input x-model="kaliIP" type="text" placeholder="192.168.1.100" 
-                                               class="w-full px-4 py-3 bg-apple-surface border border-gray-600 rounded-apple text-white placeholder-gray-500 focus:border-apple-accent focus:outline-none">
+                                               class="w-full px-3 py-2 bg-apple-surface border border-gray-600 rounded-apple text-white text-sm placeholder-gray-500 focus:border-apple-accent focus:outline-none">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-apple-secondary mb-2">Username</label>
-                                        <input x-model="kaliUser" type="text" placeholder="kali" 
-                                               class="w-full px-4 py-3 bg-apple-surface border border-gray-600 rounded-apple text-white placeholder-gray-500 focus:border-apple-accent focus:outline-none">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-apple-secondary mb-2">Password</label>
-                                        <input x-model="kaliPassword" type="password" placeholder="Your Kali password" 
-                                               class="w-full px-4 py-3 bg-apple-surface border border-gray-600 rounded-apple text-white placeholder-gray-500 focus:border-apple-accent focus:outline-none">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-apple-secondary mb-2">SSH Port</label>
+                                        <label class="block text-xs font-medium text-apple-secondary mb-1">SSH Port</label>
                                         <input x-model="kaliPort" type="number" placeholder="22" 
-                                               class="w-full px-4 py-3 bg-apple-surface border border-gray-600 rounded-apple text-white placeholder-gray-500 focus:border-apple-accent focus:outline-none">
+                                               class="w-full px-3 py-2 bg-apple-surface border border-gray-600 rounded-apple text-white text-sm placeholder-gray-500 focus:border-apple-accent focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-apple-secondary mb-1">Username</label>
+                                        <input x-model="kaliUser" type="text" placeholder="kali" 
+                                               class="w-full px-3 py-2 bg-apple-surface border border-gray-600 rounded-apple text-white text-sm placeholder-gray-500 focus:border-apple-accent focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-apple-secondary mb-1">Password</label>
+                                        <input x-model="kaliPassword" type="password" placeholder="Your password" 
+                                               class="w-full px-3 py-2 bg-apple-surface border border-gray-600 rounded-apple text-white text-sm placeholder-gray-500 focus:border-apple-accent focus:outline-none">
                                     </div>
                                 </div>
                                 
-                                <div class="mt-6">
-                                    <button @click="testKaliConnection()" :disabled="isRunning || !kaliIP || !kaliUser || !kaliPassword" 
-                                            class="w-full bg-apple-accent hover:bg-blue-600 disabled:opacity-50 text-white px-6 py-3 rounded-apple font-medium transition-all duration-200">
-                                        <span x-show="!isRunning">Test Connection & Configure SSH</span>
-                                        <span x-show="isRunning" class="flex items-center justify-center">
-                                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            Connecting...
-                                        </span>
+                                <button @click="testKaliConnection()" :disabled="isRunning || !kaliIP || !kaliUser || !kaliPassword" 
+                                        class="w-full bg-apple-accent hover:bg-blue-600 disabled:opacity-50 text-white px-6 py-3 rounded-apple font-medium transition-all duration-200 mb-3">
+                                    <span x-show="!isRunning">Generate SSH Key & Setup</span>
+                                    <span x-show="isRunning" class="flex items-center justify-center">
+                                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Setting up...
+                                    </span>
+                                </button>
+                                
+                                <!-- Compact UTM Help -->
+                                <div class="text-center">
+                                    <button @click="openDocumentation('KALI_UTM_SETUP.md')" 
+                                            class="text-blue-400 hover:text-blue-300 text-xs underline transition-colors">
+                                        💡 Need help with UTM + Kali setup?
                                     </button>
                                 </div>
                             </div>
                             
-                            <!-- Success State -->
-                            <div x-show="kaliConfigured" class="text-center">
-                                <div class="w-16 h-16 bg-apple-success rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <span class="text-2xl">✓</span>
+                            <!-- SSH Key Generated State -->
+                            <div x-show="kaliConfigured && !sshTested" class="text-center max-w-md mx-auto">
+                                <div class="w-12 h-12 bg-apple-warning rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <span class="text-lg">🔑</span>
                                 </div>
-                                <p class="text-apple-success mb-6">SSH connection configured successfully!</p>
-                                <button @click="runCurrentStep()" class="bg-apple-accent hover:bg-blue-600 text-white px-8 py-4 rounded-apple font-semibold text-lg transition-all duration-200">
+                                <p class="text-apple-secondary mb-4 text-sm">SSH key generated! Copy it to your Kali VM, then test the connection.</p>
+                                <button @click="testSSHConnection()" :disabled="isRunning" 
+                                        class="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-6 py-3 rounded-apple font-medium transition-all duration-200">
+                                    <span x-show="!isRunning">🧪 Test SSH Connection</span>
+                                    <span x-show="isRunning" class="flex items-center">
+                                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Testing...
+                                    </span>
+                                </button>
+                            </div>
+                            
+                            <!-- SSH Connection Success State -->
+                            <div x-show="sshTested" class="text-center max-w-md mx-auto">
+                                <div class="w-12 h-12 bg-apple-success rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <span class="text-lg">✅</span>
+                                </div>
+                                <p class="text-apple-success mb-4 text-sm">SSH connection working! Ready for MCP setup.</p>
+                                <button @click="runCurrentStep()" class="bg-apple-accent hover:bg-blue-600 text-white px-6 py-3 rounded-apple font-medium transition-all duration-200">
                                     Continue to Next Step
                                 </button>
                             </div>
@@ -606,11 +631,17 @@ function serveHTML(res) {
         </div>
 
         <!-- Quick Actions -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
             <button @click="openDocumentation('QUICK_START.md')" class="glass-effect rounded-apple-lg p-6 text-left hover:bg-gray-800 transition-all step-card">
                 <div class="text-2xl mb-3">📚</div>
                 <h3 class="text-lg font-semibold mb-2">Quick Start Guide</h3>
                 <p class="text-apple-secondary text-sm">Get up and running in minutes</p>
+            </button>
+            
+            <button @click="openDocumentation('KALI_UTM_SETUP.md')" class="glass-effect rounded-apple-lg p-6 text-left hover:bg-gray-800 transition-all step-card">
+                <div class="text-2xl mb-3">🐧</div>
+                <h3 class="text-lg font-semibold mb-2">Kali UTM Setup</h3>
+                <p class="text-apple-secondary text-sm">Complete UTM installation guide</p>
             </button>
             
             <button @click="openDocumentation('TROUBLESHOOTING.md')" class="glass-effect rounded-apple-lg p-6 text-left hover:bg-gray-800 transition-all step-card">
@@ -641,32 +672,33 @@ function serveHTML(res) {
                 kaliPassword: '',
                 kaliPort: 22,
                 kaliConfigured: false,
+                sshTested: false,
                 
                 testKaliConnection() {
                     this.isRunning = true;
                     
-                    // Using exact logic from working kali_mcp_wizard.sh
+                    // Step 1: Simple SSH key generation only (like original script)
                     const keyName = 'kali_mcp_key';
                     const currentDate = new Date().toISOString().slice(0,10).replace(/-/g,'');
-                    const command = 'echo "🐧 Testing connection to Kali VM: ' + this.kaliIP + '" && ' +
+                    const command = 'echo "🐧 Setting up SSH access for Kali VM: ' + this.kaliIP + '" && ' +
                                   'echo "" && ' +
-                                  'echo "🔑 Generating SSH key for MCP connection..." && ' +
-                                  'ssh-keygen -t ed25519 -f ~/.ssh/' + keyName + ' -N "" -C "mcp-kali-' + currentDate + '" >/dev/null 2>&1 || echo "SSH key already exists" && ' +
-                                  'echo "✅ SSH key generated" && ' +
+                                  'echo "🔑 Generating SSH key..." && ' +
+                                  'if [ ! -f ~/.ssh/' + keyName + ' ]; then ' +
+                                  '  ssh-keygen -t ed25519 -f ~/.ssh/' + keyName + ' -N "" -C "mcp-kali-' + currentDate + '" >/dev/null && ' +
+                                  '  echo "✅ SSH key generated" ; ' +
+                                  'else ' +
+                                  '  echo "✅ SSH key already exists" ; ' +
+                                  'fi && ' +
                                   'echo "" && ' +
-                                  'echo "🗋 Public key to copy to Kali VM:" && ' +
-                                  'cat ~/.ssh/' + keyName + '.pub 2>/dev/null || echo "Key file not found" && ' +
+                                  'echo "🗋 Copy this public key to your Kali VM:" && ' +
+                                  'cat ~/.ssh/' + keyName + '.pub 2>/dev/null && ' +
                                   'echo "" && ' +
-                                  'echo "Manual setup in your Kali VM:" && ' +
-                                  'echo "1. mkdir -p ~/.ssh && chmod 700 ~/.ssh" && ' +
-                                  'echo "2. echo [COPY_PUBLIC_KEY_ABOVE] >> ~/.ssh/authorized_keys" && ' +
-                                  'echo "3. chmod 600 ~/.ssh/authorized_keys" && ' +
+                                  'echo "In your Kali VM terminal, run:" && ' +
+                                  'echo "mkdir -p ~/.ssh && chmod 700 ~/.ssh" && ' +
+                                  'echo "echo [PASTE_KEY_ABOVE] >> ~/.ssh/authorized_keys" && ' +
+                                  'echo "chmod 600 ~/.ssh/authorized_keys" && ' +
                                   'echo "" && ' +
-                                  'echo "🧪 Or try automatic key copy:" && ' +
-                                  'ssh-copy-id -i ~/.ssh/' + keyName + ' ' + this.kaliUser + '@' + this.kaliIP + ' 2>/dev/null && echo "✅ SSH key copied automatically" || echo "⚠️ Auto-copy failed, use manual method above" && ' +
-                                  'echo "" && ' +
-                                  'echo "🚨 Testing SSH connection..." && ' +
-                                  'ssh -i ~/.ssh/' + keyName + ' -p ' + this.kaliPort + ' -o ConnectTimeout=5 -o StrictHostKeyChecking=no ' + this.kaliUser + '@' + this.kaliIP + ' "echo SSH connection successful" 2>/dev/null && echo "✅ SSH test passed!" || echo "❌ SSH test failed - please check VM and try manual setup"';
+                                  'echo "✅ SSH key setup complete - ready to test connection!"';
                     
                     this.executeKaliConnectionTest(command);
                 },
@@ -718,6 +750,71 @@ function serveHTML(res) {
                     }
                 },
                 
+                testSSHConnection() {
+                    this.isRunning = true;
+                    
+                    // Simple SSH connection test using exact command from original script
+                    const keyName = 'kali_mcp_key';
+                    const command = 'echo "🚨 Testing SSH connection to ' + this.kaliUser + '@' + this.kaliIP + '..." && ' +
+                                  'ssh -i ~/.ssh/' + keyName + ' -p ' + this.kaliPort + ' -o ConnectTimeout=5 -o StrictHostKeyChecking=no ' + this.kaliUser + '@' + this.kaliIP + ' "echo SSH connection successful" 2>/dev/null && echo "✅ SSH connection working!" || echo "❌ SSH connection failed"';
+                    
+                    this.executeSSHTest(command);
+                },
+                
+                async executeSSHTest(command) {
+                    try {
+                        // Short timeout for SSH test
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds timeout
+                        
+                        const response = await fetch('/api/execute', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ command }),
+                            signal: controller.signal
+                        });
+                        
+                        clearTimeout(timeoutId);
+                        
+                        if (!response.ok) {
+                            throw new Error('HTTP error! status: ' + response.status);
+                        }
+                        
+                        const result = await response.json();
+                        
+                        if (result.output) {
+                            this.appendToTerminal(result.output, 'success');
+                        }
+                        
+                        if (result.error) {
+                            this.appendToTerminal(result.error, 'error');
+                        }
+                        
+                        // Check if SSH test was successful
+                        if (result.output && result.output.includes('SSH connection successful')) {
+                            setTimeout(() => {
+                                this.isRunning = false;
+                                this.sshTested = true;
+                                this.appendToTerminal('✅ SSH connection verified! You can now proceed to MCP setup.', 'success');
+                            }, 1000);
+                        } else {
+                            setTimeout(() => {
+                                this.isRunning = false;
+                                this.appendToTerminal('❌ SSH test failed. Please check the key was copied correctly to your Kali VM.', 'error');
+                            }, 1000);
+                        }
+                        
+                    } catch (error) {
+                        this.isRunning = false;
+                        if (error.name === 'AbortError') {
+                            this.appendToTerminal('⚠️ SSH test timed out. Please check your Kali VM is running and accessible.', 'error');
+                        } else {
+                            this.appendToTerminal('Error: ' + error.message, 'error');
+                        }
+                        console.error('SSH test error:', error);
+                    }
+                },
+                
                 runCurrentStep() {
                     this.isRunning = true;
                     
@@ -744,12 +841,16 @@ function serveHTML(res) {
                             command = 'echo "📦 Installing dependencies..." && echo "Python, Docker, SSH verification" && sleep 2 && echo "✅ Dependencies ready"';
                             break;
                         case 3:
-                            // This step is handled by testKaliConnection(), so just proceed
-                            if (this.kaliConfigured) {
-                                command = 'echo "✅ Kali VM SSH access configured successfully!" && echo "Proceeding to MCP server setup..."';
+                            // This step requires both key generation and SSH test
+                            if (this.sshTested) {
+                                command = 'echo "✅ Kali VM SSH access verified successfully!" && echo "Proceeding to MCP server setup..."';
                             } else {
                                 this.isRunning = false;
-                                this.appendToTerminal('Please configure your Kali VM credentials first.', 'error');
+                                if (!this.kaliConfigured) {
+                                    this.appendToTerminal('Please generate SSH key and test the connection first.', 'error');
+                                } else {
+                                    this.appendToTerminal('Please test the SSH connection before proceeding.', 'error');
+                                }
                                 return;
                             }
                             break;
@@ -808,6 +909,14 @@ function serveHTML(res) {
                         this.showHelp();
                     } else if (this.currentCommand === 'docs') {
                         this.showDocsMenu();
+                    } else if (this.currentCommand === 'kali-utm') {
+                        this.openDocumentation('KALI_UTM_SETUP.md');
+                    } else if (this.currentCommand === 'quickstart') {
+                        this.openDocumentation('QUICK_START.md');
+                    } else if (this.currentCommand === 'mcp-setup') {
+                        this.openDocumentation('MCP_SERVER_SETUP.md');
+                    } else if (this.currentCommand === 'troubleshoot') {
+                        this.openDocumentation('TROUBLESHOOTING.md');
                     } else {
                         // Send to backend
                         try {
@@ -840,12 +949,14 @@ function serveHTML(res) {
                     this.appendToTerminal('  docs        - Show documentation menu', 'output');
                     this.appendToTerminal('  clear       - Clear terminal', 'output');
                     this.appendToTerminal('  quickstart  - Open quick start guide', 'output');
+                    this.appendToTerminal('  kali-utm    - Open UTM + Kali setup guide', 'output');
+                    this.appendToTerminal('  troubleshoot- Open troubleshooting guide', 'output');
                 },
 
                 showDocsMenu() {
                     this.appendToTerminal('📚 Available Documentation:', 'info');
                     this.appendToTerminal('  1. Quick Start Guide - quickstart', 'output');
-                    this.appendToTerminal('  2. Kali VM Setup - kali-setup', 'output');
+                    this.appendToTerminal('  2. Kali UTM Setup - kali-utm', 'output');
                     this.appendToTerminal('  3. MCP Server Setup - mcp-setup', 'output');
                     this.appendToTerminal('  4. Troubleshooting - troubleshoot', 'output');
                 },
