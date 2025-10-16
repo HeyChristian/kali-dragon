@@ -442,12 +442,20 @@ function serveHTML(res) {
                                     </span>
                                 </button>
                                 
-                                <!-- Compact UTM Help -->
-                                <div class="text-center">
-                                    <button @click="openDocumentation('KALI_UTM_SETUP.md')" 
-                                            class="text-blue-400 hover:text-blue-300 text-xs underline transition-colors">
-                                        💡 Need help with UTM + Kali setup?
-                                    </button>
+                                <!-- Help Link for UTM Setup -->
+                                <div class="mt-4">
+                                    <div class="bg-blue-900/30 border border-blue-500/30 rounded-apple p-4">
+                                        <div class="flex items-center space-x-3">
+                                            <span class="text-blue-400 text-xl">💡</span>
+                                            <div>
+                                                <p class="text-sm text-blue-100 font-medium">Need help setting up Kali Linux with UTM?</p>
+                                                <button @click="openDocumentation('KALI_UTM_SETUP.md')" 
+                                                        class="text-blue-400 hover:text-blue-300 text-sm underline mt-1 transition-colors">
+                                                    📚 Complete UTM + Kali Installation Guide
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
