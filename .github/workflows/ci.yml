@@ -1,0 +1,291 @@
+name: 🐉 Kali Dragon CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: 🧪 Test & Validate
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [18, 20, 21]
+        exclude:
+          # Skip Node.js 18 on Windows due to compatibility issues
+          - os: windows-latest
+            node-version: 18
+
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+
+    - name: 📦 Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: 🔍 Verify Setup Script
+      if: runner.os != 'Windows'
+      run: |
+        echo "🧪 Testing setup script permissions and basic syntax..."
+        test -f setup.sh
+        test -x setup.sh
+        bash -n setup.sh
+        echo "✅ Setup script validation passed"
+      shell: bash
+
+    - name: 🌐 Test Web Server (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        echo "🪟 Testing on Windows..."
+        cd web-wizard
+        node -c server.js
+        echo "✅ Server syntax validation passed on Windows"
+      shell: pwsh
+      
+    - name: 🌐 Test Web Server (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        echo "🐧 Testing on Unix-like system..."
+        cd web-wizard
+        
+        # Test Node.js server syntax
+        node -c server.js
+        echo "✅ Server.js syntax is valid"
+        
+        # Start server in background
+        node server.js &
+        SERVER_PID=$!
+        echo "Server PID: $SERVER_PID"
+        
+        # Wait for server to start
+        sleep 5
+        
+        # Test if server is responding
+        if command -v curl >/dev/null 2>&1; then
+          echo "Testing server response..."
+          curl -f http://localhost:8000 || exit 1
+          echo "✅ Server responds correctly"
+        elif command -v wget >/dev/null 2>&1; then
+          echo "Testing server response with wget..."
+          wget --spider http://localhost:8000 || exit 1
+          echo "✅ Server responds correctly"
+        else
+          echo "⚠️ No curl or wget available, skipping HTTP test"
+        fi
+        
+        # Clean up
+        kill $SERVER_PID || true
+      shell: bash
+        
+    - name: 📚 Validate Documentation (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        echo "📚 Testing documentation files on Windows..."
+        if (-not (Test-Path "README.md")) { echo "❌ README.md missing"; exit 1 }
+        if (-not (Test-Path "LICENSE")) { echo "❌ LICENSE missing"; exit 1 }
+        if (-not (Test-Path "CONTRIBUTING.md")) { echo "❌ CONTRIBUTING.md missing"; exit 1 }
+        if (-not (Test-Path "CHANGELOG.md")) { echo "❌ CHANGELOG.md missing"; exit 1 }
+        if (-not (Test-Path "docs" -PathType Container)) { echo "❌ docs directory missing"; exit 1 }
+        echo "✅ Documentation validation passed on Windows"
+      shell: pwsh
+      
+    - name: 📚 Validate Documentation (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        echo "📚 Testing documentation files..."
+        
+        # Check required docs exist
+        test -f README.md || (echo "❌ README.md missing" && exit 1)
+        test -f LICENSE || (echo "❌ LICENSE missing" && exit 1)
+        test -f CONTRIBUTING.md || (echo "❌ CONTRIBUTING.md missing" && exit 1)
+        test -f CHANGELOG.md || (echo "❌ CHANGELOG.md missing" && exit 1)
+        
+        # Check docs directory
+        test -d docs || (echo "❌ docs directory missing" && exit 1)
+        
+        # Validate markdown files don't have obvious syntax errors
+        find docs -name "*.md" -exec head -1 {} \; > /dev/null
+        
+        echo "✅ Documentation validation passed"
+      shell: bash
+
+    - name: 🔒 Security Check (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        echo "🔐 Running basic security checks on Windows..."
+        echo "Checking for common security patterns..."
+        $files = Get-ChildItem -Recurse -Include *.js,*.sh .
+        $patterns = @("password", "secret", "key", "token")
+        $found = $false
+        foreach ($file in $files) {
+          $content = Get-Content $file.FullName -Raw -ErrorAction SilentlyContinue
+          if ($content) {
+            foreach ($pattern in $patterns) {
+              if ($content -match "$pattern\s*[:=]" -and $content -notmatch "placeholder|example|TODO|FIXME") {
+                Write-Host "⚠️ Potential hardcoded $pattern found in $($file.Name)"
+                $found = $true
+              }
+            }
+          }
+        }
+        if (-not $found) {
+          echo "✅ No hardcoded secrets detected"
+        }
+        echo "✅ Security check completed on Windows"
+      shell: pwsh
+      
+    - name: 🔒 Security Check (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        echo "🔐 Running basic security checks..."
+        
+        # Check for common security issues
+        echo "Checking for hardcoded secrets..."
+        if grep -r -i "password\|secret\|key\|token" --include="*.js" --include="*.sh" . | grep -v "placeholder\|example\|TODO\|FIXME" | grep -E "(=|:)" ; then
+          echo "⚠️ Potential hardcoded secrets found (review above)"
+        else
+          echo "✅ No hardcoded secrets detected"
+        fi
+        
+        # Check file permissions
+        echo "Checking file permissions..."
+        find . -name "*.sh" ! -perm -u+x -exec echo "⚠️ Script not executable: {}" \;
+        
+        echo "✅ Security check completed"
+      shell: bash
+
+    - name: 🔧 Test Setup Process (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        echo "🛠️ Testing setup process on Windows..."
+        echo "🔍 Checking Node.js..."
+        node --version
+        echo "📁 Checking project structure..."
+        if (-not (Test-Path "web-wizard" -PathType Container)) { echo "❌ web-wizard directory missing"; exit 1 }
+        if (-not (Test-Path "web-wizard/server.js")) { echo "❌ server.js missing"; exit 1 }
+        echo "✅ Setup validation completed on Windows"
+      shell: pwsh
+      
+    - name: 🔧 Test Setup Process (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        echo "🛠️ Testing setup process..."
+        
+        # Test basic setup logic without actually running server
+        bash -c "
+          # Simulate the main parts of setup.sh
+          echo '🔍 Checking Node.js...'
+          node --version
+          echo '📁 Checking project structure...'
+          test -d web-wizard
+          test -f web-wizard/server.js
+          echo '✅ Setup validation completed'
+        "
+      shell: bash
+
+  lint:
+    name: 🎨 Code Style & Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: 🧹 Lint JavaScript
+      run: |
+        echo "🎨 Checking JavaScript code quality..."
+        
+        # Basic syntax validation
+        find . -name "*.js" -not -path "./node_modules/*" -exec node -c {} \;
+        
+        echo "✅ JavaScript syntax validation passed"
+
+    - name: 🔍 Check File Structure
+      run: |
+        echo "📂 Validating project structure..."
+        
+        # Required files
+        required_files="README.md LICENSE CONTRIBUTING.md setup.sh web-wizard/server.js"
+        
+        for file in $required_files; do
+          if [ ! -f "$file" ]; then
+            echo "❌ Required file missing: $file"
+            exit 1
+          fi
+        done
+        
+        # Required directories
+        required_dirs="docs web-wizard .github"
+        
+        for dir in $required_dirs; do
+          if [ ! -d "$dir" ]; then
+            echo "❌ Required directory missing: $dir"
+            exit 1
+          fi
+        done
+        
+        echo "✅ Project structure validation passed"
+
+  compatibility:
+    name: 🌍 Cross-Platform Compatibility
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: 🖥️ Test Platform Compatibility
+      run: |
+        echo "🌍 Testing on ${{ runner.os }}..."
+        
+        # Test Node.js availability
+        node --version
+        npm --version
+        
+        # Test server file syntax
+        cd web-wizard
+        node -c server.js
+        
+        echo "✅ Platform compatibility test passed on ${{ runner.os }}"
+
+  status-check:
+    name: ✅ All Tests Status
+    runs-on: ubuntu-latest
+    needs: [test, lint, compatibility]
+    if: always()
+    
+    steps:
+    - name: 📊 Check Results
+      run: |
+        echo "=== Test Results Summary ==="
+        echo "Test: ${{ needs.test.result }}"
+        echo "Lint: ${{ needs.lint.result }}"
+        echo "Compatibility: ${{ needs.compatibility.result }}"
+        
+        if [[ "${{ needs.test.result }}" == "success" && "${{ needs.lint.result }}" == "success" && "${{ needs.compatibility.result }}" == "success" ]]; then
+          echo "🎉 All tests passed! Ready for merge."
+          exit 0
+        else
+          echo "❌ Some tests failed. Please fix issues before merging."
+          exit 1
+        fi
