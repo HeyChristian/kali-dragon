@@ -645,22 +645,28 @@ function serveHTML(res) {
                 testKaliConnection() {
                     this.isRunning = true;
                     
-                    // Simple SSH key generation and instructions (no actual connection attempt)
+                    // Using exact logic from working kali_mcp_wizard.sh
                     const keyName = 'kali_mcp_key';
-                    const command = 'printf "🐧 Setting up SSH access for Kali VM: ' + this.kaliIP + '\\n\\n" && ' +
-                                  'printf "🔑 Generating SSH key for MCP connection...\\n" && ' +
-                                  'ssh-keygen -t rsa -b 4096 -f ~/.ssh/' + keyName + ' -N "" -C "kali-mcp-setup" -q 2>/dev/null || printf "SSH key already exists\\n" && ' +
-                                  'printf "✅ SSH key ready\\n\\n" && ' +
-                                  'printf "📋 Next steps to complete setup:\\n\\n" && ' +
-                                  'printf "1. Copy this public key to your Kali VM:\\n" && ' +
-                                  'cat ~/.ssh/' + keyName + '.pub 2>/dev/null || printf "Key file not found\\n" && ' +
-                                  'printf "\\n2. In your Kali VM, run these commands:\\n" && ' +
-                                  'printf "   mkdir -p ~/.ssh && chmod 700 ~/.ssh\\n" && ' +
-                                  'printf "   echo \"[YOUR_PUBLIC_KEY]\" >> ~/.ssh/authorized_keys\\n" && ' +
-                                  'printf "   chmod 600 ~/.ssh/authorized_keys\\n\\n" && ' +
-                                  'printf "3. Test the connection:\\n" && ' +
-                                  'printf "   ssh -i ~/.ssh/' + keyName + ' ' + this.kaliUser + '@' + this.kaliIP + '\\n\\n" && ' +
-                                  'printf "🔧 SSH setup instructions generated!\\n"';
+                    const currentDate = new Date().toISOString().slice(0,10).replace(/-/g,'');
+                    const command = 'echo "🐧 Testing connection to Kali VM: ' + this.kaliIP + '" && ' +
+                                  'echo "" && ' +
+                                  'echo "🔑 Generating SSH key for MCP connection..." && ' +
+                                  'ssh-keygen -t ed25519 -f ~/.ssh/' + keyName + ' -N "" -C "mcp-kali-' + currentDate + '" >/dev/null 2>&1 || echo "SSH key already exists" && ' +
+                                  'echo "✅ SSH key generated" && ' +
+                                  'echo "" && ' +
+                                  'echo "🗋 Public key to copy to Kali VM:" && ' +
+                                  'cat ~/.ssh/' + keyName + '.pub 2>/dev/null || echo "Key file not found" && ' +
+                                  'echo "" && ' +
+                                  'echo "Manual setup in your Kali VM:" && ' +
+                                  'echo "1. mkdir -p ~/.ssh && chmod 700 ~/.ssh" && ' +
+                                  'echo "2. echo [COPY_PUBLIC_KEY_ABOVE] >> ~/.ssh/authorized_keys" && ' +
+                                  'echo "3. chmod 600 ~/.ssh/authorized_keys" && ' +
+                                  'echo "" && ' +
+                                  'echo "🧪 Or try automatic key copy:" && ' +
+                                  'ssh-copy-id -i ~/.ssh/' + keyName + ' ' + this.kaliUser + '@' + this.kaliIP + ' 2>/dev/null && echo "✅ SSH key copied automatically" || echo "⚠️ Auto-copy failed, use manual method above" && ' +
+                                  'echo "" && ' +
+                                  'echo "🚨 Testing SSH connection..." && ' +
+                                  'ssh -i ~/.ssh/' + keyName + ' -p ' + this.kaliPort + ' -o ConnectTimeout=5 -o StrictHostKeyChecking=no ' + this.kaliUser + '@' + this.kaliIP + ' "echo SSH connection successful" 2>/dev/null && echo "✅ SSH test passed!" || echo "❌ SSH test failed - please check VM and try manual setup"';
                     
                     this.executeKaliConnectionTest(command);
                 },
@@ -681,7 +687,7 @@ function serveHTML(res) {
                         clearTimeout(timeoutId);
                         
                         if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
+                            throw new Error('HTTP error! status: ' + response.status);
                         }
                         
                         const result = await response.json();
