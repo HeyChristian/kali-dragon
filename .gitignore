@@ -1,0 +1,127 @@
+# Marketing and Private Content - Never commit to public repo
+reddit-posts/
+marketing/
+private/
+personal/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.node_repl_history
+
+# Logs
+logs
+*.log
+*.log.*
+.cache
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Temporary files
+.tmp/
+temp/
+*.tmp
+*.temp
+
+# Operating System Files
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+*.exe
+*.msi
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.sublime-project
+.sublime-workspace
+
+# SSH Keys and Certificates
+*.pem
+*.key
+*.crt
+*.p12
+id_rsa*
+id_ed25519*
+known_hosts
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Backup files
+*.backup
+*.bak
+*.orig
+
+# Test files
+test-results/
+screenshots/
+demo-videos/
+
+# Build artifacts
+dist/
+build/
+out/
+
+# Package files
+*.tgz
+*.tar.gz
+*.zip
+*.rar
+*.7z
+
+# Local configuration
+config.local.*
+settings.local.*
+
+# Analytics and tracking (if added later)
+analytics/
+tracking/
+metrics/
+
+# User-specific content
+user-configs/
+user-data/
+user-scripts/
+
+# Development tools
+.prettierrc.local
+.eslintrc.local
