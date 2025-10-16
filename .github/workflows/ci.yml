@@ -115,7 +115,33 @@ jobs:
         echo "✅ Documentation validation passed"
       shell: bash
 
-    - name: 🔒 Security Check
+    - name: 🔒 Security Check (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        echo "🔐 Running basic security checks on Windows..."
+        echo "Checking for common security patterns..."
+        $files = Get-ChildItem -Recurse -Include *.js,*.sh .
+        $patterns = @("password", "secret", "key", "token")
+        $found = $false
+        foreach ($file in $files) {
+          $content = Get-Content $file.FullName -Raw -ErrorAction SilentlyContinue
+          if ($content) {
+            foreach ($pattern in $patterns) {
+              if ($content -match "$pattern\s*[:=]" -and $content -notmatch "placeholder|example|TODO|FIXME") {
+                Write-Host "⚠️ Potential hardcoded $pattern found in $($file.Name)"
+                $found = $true
+              }
+            }
+          }
+        }
+        if (-not $found) {
+          echo "✅ No hardcoded secrets detected"
+        }
+        echo "✅ Security check completed on Windows"
+      shell: pwsh
+      
+    - name: 🔒 Security Check (Unix)
+      if: runner.os != 'Windows'
       run: |
         echo "🔐 Running basic security checks..."
         
@@ -132,26 +158,36 @@ jobs:
         find . -name "*.sh" ! -perm -u+x -exec echo "⚠️ Script not executable: {}" \;
         
         echo "✅ Security check completed"
+      shell: bash
 
-    - name: 🔧 Test Setup Process
+    - name: 🔧 Test Setup Process (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        echo "🛠️ Testing setup process on Windows..."
+        echo "🔍 Checking Node.js..."
+        node --version
+        echo "📁 Checking project structure..."
+        if (-not (Test-Path "web-wizard" -PathType Container)) { echo "❌ web-wizard directory missing"; exit 1 }
+        if (-not (Test-Path "web-wizard/server.js")) { echo "❌ server.js missing"; exit 1 }
+        echo "✅ Setup validation completed on Windows"
+      shell: pwsh
+      
+    - name: 🔧 Test Setup Process (Unix)
+      if: runner.os != 'Windows'
       run: |
         echo "🛠️ Testing setup process..."
         
-        # Validate setup script can run (dry run)
-        if [[ "$RUNNER_OS" != "Windows" ]]; then
-          # Test basic setup logic without actually running server
-          bash -c "
-            # Simulate the main parts of setup.sh
-            echo '🔍 Checking Node.js...'
-            node --version
-            echo '📁 Checking project structure...'
-            test -d web-wizard
-            test -f web-wizard/server.js
-            echo '✅ Setup validation completed'
-          "
-        else
-          echo "⚠️ Skipping setup test on Windows"
-        fi
+        # Test basic setup logic without actually running server
+        bash -c "
+          # Simulate the main parts of setup.sh
+          echo '🔍 Checking Node.js...'
+          node --version
+          echo '📁 Checking project structure...'
+          test -d web-wizard
+          test -f web-wizard/server.js
+          echo '✅ Setup validation completed'
+        "
+      shell: bash
 
   lint:
     name: 🎨 Code Style & Quality
