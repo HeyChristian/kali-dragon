@@ -543,28 +543,36 @@ function serveHTML(res) {
                             <div class="max-w-md mx-auto mb-8 text-left">
                                 <div class="space-y-3">
                                     <div class="flex items-center space-x-3">
-                                        <div class="w-6 h-6 rounded-full bg-apple-warning flex items-center justify-center">
-                                            <span class="text-xs">?</span>
+                                        <div class="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-500" 
+                                             :class="claudeDesktopInstalled === true ? 'bg-green-500' : (claudeDesktopInstalled === false ? 'bg-red-500' : 'bg-apple-warning')">
+                                            <span class="text-xs font-bold" 
+                                                  :class="claudeDesktopInstalled === true ? 'text-white' : (claudeDesktopInstalled === false ? 'text-white' : 'text-gray-800')" 
+                                                  x-text="claudeDesktopInstalled === true ? '✓' : (claudeDesktopInstalled === false ? '✗' : '?')"></span>
                                         </div>
-                                        <span class="text-apple-secondary">Claude Desktop Application</span>
+                                        <span class="text-apple-secondary"><strong>Claude Desktop Application</strong> (Required)</span>
                                     </div>
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-6 h-6 rounded-full bg-apple-warning flex items-center justify-center">
-                                            <span class="text-xs">?</span>
-                                        </div>
-                                        <span class="text-apple-secondary">Python 3 (for scripting)</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Conditional Helpers -->
+                            <!-- Claude Desktop Missing Helper -->
+                            <div x-show="claudeDesktopInstalled === false" class="max-w-md mx-auto mb-6">
+                                <div class="bg-red-900/30 border border-red-500/30 rounded-apple p-4 text-center">
+                                    <div class="text-red-400 text-xl mb-2">⚠️</div>
+                                    <p class="text-sm text-red-100 font-medium mb-2">Claude Desktop Required</p>
+                                    <p class="text-xs text-red-200 mb-3">Download from <a href="https://claude.ai/download" target="_blank" class="text-red-400 hover:text-red-300 underline font-medium">claude.ai/download</a></p>
+                                    <div class="text-xs text-red-300 bg-red-800/30 rounded px-2 py-1">
+                                        💳 <strong>Note:</strong> Premium subscription required for MCP
                                     </div>
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-6 h-6 rounded-full bg-apple-warning flex items-center justify-center">
-                                            <span class="text-xs">?</span>
-                                        </div>
-                                        <span class="text-apple-secondary">Docker (for containerization)</span>
-                                    </div>
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-6 h-6 rounded-full bg-apple-warning flex items-center justify-center">
-                                            <span class="text-xs">?</span>
-                                        </div>
-                                        <span class="text-apple-secondary">SSH Client (for Kali connection)</span>
+                                </div>
+                            </div>
+                            
+                            <!-- MCP Premium Info (when Claude Desktop is installed) -->
+                            <div x-show="claudeDesktopInstalled === true" class="max-w-md mx-auto mb-6">
+                                <div class="bg-green-900/30 border border-green-500/30 rounded-apple p-3 text-center">
+                                    <div class="text-green-400 text-sm mb-1">✅ Claude Desktop Ready</div>
+                                    <div class="text-xs text-green-200">
+                                        💳 <strong>Premium subscription</strong> required for MCP features
                                     </div>
                                 </div>
                             </div>
@@ -588,17 +596,17 @@ function serveHTML(res) {
                             <div class="w-16 h-16 bg-apple-accent rounded-full flex items-center justify-center mx-auto mb-4">
                                 <span class="text-2xl">📦</span>
                             </div>
-                            <h3 class="text-3xl font-bold mb-4 text-white">Install Dependencies</h3>
-                            <p class="text-apple-secondary mb-8 max-w-lg mx-auto">Install required dependencies: Python, Docker, SSH client</p>
+                            <h3 class="text-3xl font-bold mb-4 text-white">Install SSH Client</h3>
+                            <p class="text-apple-secondary mb-8 max-w-lg mx-auto">Ensure SSH client is available for connecting to your Kali VM</p>
                             <button @click="runCurrentStep()" :disabled="isRunning" 
                                     class="bg-apple-accent hover:bg-blue-600 disabled:opacity-50 text-white px-8 py-4 rounded-apple font-semibold text-lg transition-all duration-200">
-                                <span x-show="!isRunning">Install Dependencies</span>
+                                <span x-show="!isRunning">Setup SSH Client</span>
                                 <span x-show="isRunning" class="flex items-center">
                                     <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    Installing...
+                                    Setting up...
                                 </span>
                             </button>
                         </div>
@@ -889,6 +897,9 @@ function serveHTML(res) {
                 kaliConfigured: false,
                 sshTested: false,
                 
+                // System Requirements
+                claudeDesktopInstalled: null, // null = not checked, true = found, false = missing
+                
                 testKaliConnection() {
                     this.isRunning = true;
                     
@@ -1037,23 +1048,57 @@ function serveHTML(res) {
                     let command = '';
                     switch(this.currentStep) {
                         case 1:
-                            command = 'echo "🔍 Checking system requirements..." && ' +
+                            command = 'echo "🔍 Checking system requirements for Kali MCP setup..." && ' +
                                     'echo "" && ' +
-                                    'echo "Checking Node.js..." && ' +
-                                    'echo "✅ Node.js found: $(node --version)" && ' +
+                                    'echo "📱 Checking Claude Desktop (REQUIRED)..." && ' +
+                                    'if [ -d "/Applications/Claude.app" ]; then ' +
+                                    '  echo "✅ Claude Desktop found (macOS)" && ' +
+                                    '  CLAUDE_FOUND=true; ' +
+                                    'elif [ -d "/mnt/c/Users/$USER/AppData/Local/Programs/claude-desktop" ]; then ' +
+                                    '  echo "✅ Claude Desktop found (Windows WSL)" && ' +
+                                    '  CLAUDE_FOUND=true; ' +
+                                    'elif pgrep -i "claude" >/dev/null 2>&1; then ' +
+                                    '  echo "✅ Claude Desktop found (running process)" && ' +
+                                    '  CLAUDE_FOUND=true; ' +
+                                    'else ' +
+                                    '  echo "❌ Claude Desktop NOT FOUND" && ' +
+                                    '  echo "   Please install from: https://claude.ai/download" && ' +
+                                    '  echo "   ⚠️  Cannot proceed without Claude Desktop!" && ' +
+                                    '  CLAUDE_FOUND=false; ' +
+                                    'fi && ' +
                                     'echo "" && ' +
-                                    'echo "Checking Claude Desktop..." && ' +
-                                    '(ls "/Applications/Claude.app" >/dev/null 2>&1 && echo "✅ Claude Desktop found" || echo "❌ Claude Desktop not found - Please install from https://claude.ai/download") && ' +
-                                    'echo "" && ' +
-                                    'echo "Checking SSH client (for Kali VM connection)..." && ' +
-                                    '(which ssh >/dev/null 2>&1 && echo "✅ SSH client found" || echo "❌ SSH client not found") && ' +
-                                    'echo "" && ' +
-                                    'echo "✅ System requirements check complete!" && ' +
-                                    'echo "" && ' +
-                                    'echo "💡 Note: This setup only requires Node.js, Claude Desktop, and SSH"';
+                                    'if [ "$CLAUDE_FOUND" = "true" ]; then ' +
+                                    '  echo "✅ System requirements check PASSED!" && ' +
+                                    '  echo "   Ready to proceed with MCP setup"; ' +
+                                    'else ' +
+                                    '  echo "❌ System requirements check FAILED!" && ' +
+                                    '  echo "   Install Claude Desktop before continuing"; ' +
+                                    'fi';
                             break;
                         case 2:
-                            command = 'echo "📦 Installing dependencies..." && echo "Python, Docker, SSH verification" && sleep 2 && echo "✅ Dependencies ready"';
+                            command = 'echo "🔐 Setting up SSH client for Kali VM connection..." && ' +
+                                    'echo "" && ' +
+                                    'if which ssh >/dev/null 2>&1; then ' +
+                                    '  echo "✅ SSH client already available" && ' +
+                                    '  ssh -V 2>&1 | head -n1 && ' +
+                                    '  echo "SSH client is ready for Kali VM connection" ; ' +
+                                    'else ' +
+                                    '  echo "❌ SSH client not found" && ' +
+                                    '  echo "Installing SSH client based on platform..." && ' +
+                                    '  if [[ "$OSTYPE" == "darwin"* ]]; then ' +
+                                    '    echo "SSH client should be pre-installed on macOS" && ' +
+                                    '    echo "If missing, install Xcode Command Line Tools: xcode-select --install" ; ' +
+                                    '  elif [[ "$OSTYPE" == "linux-gnu"* ]]; then ' +
+                                    '    echo "Installing openssh-client..." && ' +
+                                    '    (sudo apt-get update && sudo apt-get install -y openssh-client) || ' +
+                                    '    (sudo yum install -y openssh-clients) || ' +
+                                    '    echo "Please install SSH client manually" ; ' +
+                                    '  else ' +
+                                    '    echo "Please install SSH client for your platform" ; ' +
+                                    '  fi ; ' +
+                                    'fi && ' +
+                                    'echo "" && ' +
+                                    'echo "✅ SSH client setup complete!"';
                             break;
                         case 3:
                             // This step requires both key generation and SSH test
@@ -1098,15 +1143,39 @@ function serveHTML(res) {
                             this.appendToTerminal(result.error, 'error');
                         }
                         
-                        // Move to next step after successful completion
+                        // Check if this is Step 1 and validate Claude Desktop
                         setTimeout(() => {
                             this.isRunning = false;
-                            if (this.currentStep < this.totalSteps) {
-                                this.currentStep++;
+                            
+                            // For Step 1, check if Claude Desktop was found
+                            if (this.currentStep === 1) {
+                                // Check Claude Desktop status
+                                if (result.output && result.output.includes('Claude Desktop found')) {
+                                    this.claudeDesktopInstalled = true;
+                                } else {
+                                    this.claudeDesktopInstalled = false;
+                                }
+                                
+                                
+                                // Determine if we can proceed
+                                if (this.claudeDesktopInstalled === true) {
+                                    this.appendToTerminal('✅ All requirements met! You can now proceed.', 'success');
+                                    if (this.currentStep < this.totalSteps) {
+                                        this.currentStep++;
+                                    }
+                                } else {
+                                    this.appendToTerminal('❌ Cannot proceed without Claude Desktop. Please install it first.', 'error');
+                                    // Don't advance to next step
+                                }
                             } else {
-                                this.currentStep = 6; // Show completion screen
+                                // For other steps, proceed normally
+                                if (this.currentStep < this.totalSteps) {
+                                    this.currentStep++;
+                                } else {
+                                    this.currentStep = 6; // Show completion screen
+                                }
                             }
-                        }, 1000);
+                        }, 1500);
                         
                     } catch (error) {
                         this.appendToTerminal('Error: ' + error.message, 'error');
