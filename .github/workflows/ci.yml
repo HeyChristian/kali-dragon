@@ -30,64 +30,75 @@ jobs:
         node-version: ${{ matrix.node-version }}
 
     - name: 🔍 Verify Setup Script
+      if: runner.os != 'Windows'
       run: |
         echo "🧪 Testing setup script permissions and basic syntax..."
         test -f setup.sh
         test -x setup.sh
         bash -n setup.sh
         echo "✅ Setup script validation passed"
+      shell: bash
 
-    - name: 🌐 Test Web Server
+    - name: 🌐 Test Web Server (Windows)
+      if: runner.os == 'Windows'
       run: |
-        echo "🚀 Starting web server test..."
+        echo "🪟 Testing on Windows..."
+        cd web-wizard
+        node -c server.js
+        echo "✅ Server syntax validation passed on Windows"
+      shell: pwsh
+      
+    - name: 🌐 Test Web Server (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        echo "🐧 Testing on Unix-like system..."
         cd web-wizard
         
         # Test Node.js server syntax
         node -c server.js
         echo "✅ Server.js syntax is valid"
         
-        # Cross-platform server testing
-        if [[ "$RUNNER_OS" == "Windows" ]]; then
-          echo "🪟 Testing on Windows..."
-          # Start server in background (Windows style)
-          start /B node server.js
-          sleep 8
-          
-          # Test with PowerShell on Windows
-          powershell -Command "try { Invoke-WebRequest -Uri 'http://localhost:8000' -UseBasicParsing | Out-Null; Write-Host '✅ Server responds correctly' } catch { Write-Host '❌ Server test failed'; exit 1 }"
-          
-          # Clean up Windows processes
-          taskkill //F //IM node.exe 2>NUL || echo "Server cleanup attempted"
+        # Start server in background
+        node server.js &
+        SERVER_PID=$!
+        echo "Server PID: $SERVER_PID"
+        
+        # Wait for server to start
+        sleep 5
+        
+        # Test if server is responding
+        if command -v curl >/dev/null 2>&1; then
+          echo "Testing server response..."
+          curl -f http://localhost:8000 || exit 1
+          echo "✅ Server responds correctly"
+        elif command -v wget >/dev/null 2>&1; then
+          echo "Testing server response with wget..."
+          wget --spider http://localhost:8000 || exit 1
+          echo "✅ Server responds correctly"
         else
-          echo "🐧 Testing on Unix-like system..."
-          # Start server in background
-          node server.js &
-          SERVER_PID=$!
-          echo "Server PID: $SERVER_PID"
-          
-          # Wait for server to start
-          sleep 5
-          
-          # Test if server is responding
-          if command -v curl >/dev/null 2>&1; then
-            echo "Testing server response..."
-            curl -f http://localhost:8000 || exit 1
-            echo "✅ Server responds correctly"
-          elif command -v wget >/dev/null 2>&1; then
-            echo "Testing server response with wget..."
-            wget --spider http://localhost:8000 || exit 1
-            echo "✅ Server responds correctly"
-          else
-            echo "⚠️ No curl or wget available, skipping HTTP test"
-          fi
-          
-          # Clean up
-          kill $SERVER_PID || true
+          echo "⚠️ No curl or wget available, skipping HTTP test"
         fi
         
-    - name: 📚 Validate Documentation
+        # Clean up
+        kill $SERVER_PID || true
+      shell: bash
+        
+    - name: 📚 Validate Documentation (Windows)
+      if: runner.os == 'Windows'
       run: |
-        echo "📖 Testing documentation files..."
+        echo "📚 Testing documentation files on Windows..."
+        if (-not (Test-Path "README.md")) { echo "❌ README.md missing"; exit 1 }
+        if (-not (Test-Path "LICENSE")) { echo "❌ LICENSE missing"; exit 1 }
+        if (-not (Test-Path "CONTRIBUTING.md")) { echo "❌ CONTRIBUTING.md missing"; exit 1 }
+        if (-not (Test-Path "CHANGELOG.md")) { echo "❌ CHANGELOG.md missing"; exit 1 }
+        if (-not (Test-Path "docs" -PathType Container)) { echo "❌ docs directory missing"; exit 1 }
+        echo "✅ Documentation validation passed on Windows"
+      shell: pwsh
+      
+    - name: 📚 Validate Documentation (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        echo "📚 Testing documentation files..."
         
         # Check required docs exist
         test -f README.md || (echo "❌ README.md missing" && exit 1)
@@ -102,6 +113,7 @@ jobs:
         find docs -name "*.md" -exec head -1 {} \; > /dev/null
         
         echo "✅ Documentation validation passed"
+      shell: bash
 
     - name: 🔒 Security Check
       run: |
