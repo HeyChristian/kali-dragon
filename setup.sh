@@ -19,7 +19,7 @@ print_header() {
     echo ""
     echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${PURPLE}║                                                              ║${NC}"
-    echo -e "${PURPLE}║          🐉 KALI DRAGON WEB WIZARD v4.0 🐉                  ║${NC}"
+    echo -e "${PURPLE}║          🐉 KALI DRAGON WEB WIZARD v1.0 🐉                   ║${NC}"
     echo -e "${PURPLE}║                                                              ║${NC}"
     echo -e "${PURPLE}║          ⚡ INSTANT LAUNCH - NO INSTALL NEEDED ⚡            ║${NC}"
     echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"

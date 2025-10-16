@@ -928,7 +928,5 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
     console.log('\n🐉 Kali Dragon Setup Server');
     console.log('📍 Server running at: http://localhost:' + PORT);
-    console.log('🎯 Modern Apple-style interface ready!');
-    console.log('⚡ Automatic wizard with progress tracking');
     console.log('💡 Browser will open automatically when using ./setup.sh');
 });
