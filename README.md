@@ -1,3 +1,5 @@
+<div align="center">
+
 # 🐉 Kali Dragon
 
 > **Ultimate Kali Linux MCP Management Interface**  
@@ -6,6 +8,14 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux%20%7C%20Windows-blue.svg)](https://github.com/HeyChristian/kali-dragon)
+[![GitHub release](https://img.shields.io/github/v/release/HeyChristian/kali-dragon)](https://github.com/HeyChristian/kali-dragon/releases)
+[![GitHub stars](https://img.shields.io/github/stars/HeyChristian/kali-dragon?style=social)](https://github.com/HeyChristian/kali-dragon)
+
+<img src=".github/screenshots/terminal-interface.png" alt="Kali Dragon Interface" width="700">
+
+**🎆 Beautiful Dark Mode Terminal | ⚡ Zero Dependencies | 🛡️ Security First**
+
+</div>
 
 ## ✨ Features
 
@@ -46,27 +56,51 @@ That's it! The setup script will:
 - ✅ Start the web server
 - ✅ Open browser automatically
 
-## 📱 Interface Overview
+## 📸 Screenshots
 
-### **🎨 Dark Mode Terminal Interface**
-- **Header Dashboard** - Compact system status with live indicators
-- **Main Terminal** - 60vh height with authentic terminal styling
-- **Quick Actions** - Organized in Setup & Management categories
-- **System Status** - Real-time monitoring of dependencies
+### **🎆 Modern Web Interface**
+<div align="center">
+  <img src=".github/screenshots/terminal-interface.png" alt="Kali Dragon Terminal Interface" width="800">
+  <p><em>Beautiful dark mode terminal with real-time command execution</em></p>
+</div>
 
-### **🏗️ Setup & Configuration**
-- **Start Setup Process** - Guided setup workflow
-- **Install Dependencies** - Check and install Python, Docker, SSH
-- **Configure Kali VM** - SSH connection wizard
-- **Setup MCP Server** - Initialize MCP services
-- **Test Connection** - Verify everything works
+### **🔍 Step 1: System Requirements Check**
+<div align="center">
+  <img src=".github/screenshots/step1-requirements-check.png" alt="System Requirements Check" width="800">
+  <p><em>Validates Claude Desktop installation and system compatibility</em></p>
+</div>
 
-### **⚙️ Management & Tools**
-- **Start/Stop MCP** - Control MCP server
-- **View Logs** - System log monitoring
-- **Restart Services** - Quick service restart
-- **Documentation** - Access guides and tutorials
-- **Configuration** - Export/import/reset settings
+### **🔐 Step 2: SSH Client Setup**
+<div align="center">
+  <img src=".github/screenshots/step2-ssh-setup.png" alt="SSH Client Setup" width="800">
+  <p><em>Ensures SSH connectivity for Kali VM communication</em></p>
+</div>
+
+### **🐧 Step 3: Kali VM Configuration**
+<div align="center">
+  <img src=".github/screenshots/step3-kali-vm-config.png" alt="Kali VM Configuration" width="800">
+  <p><em>Automated SSH key generation and VM connection setup</em></p>
+</div>
+
+## 📱 Key Features
+
+### **🎨 Modern Interface**
+- **Apple-style Dark Mode** with glassmorphism effects
+- **Interactive Terminal** with authentic Kali styling
+- **Real-time Command Execution** with colored output
+- **Responsive Design** that works on all devices
+
+### **⚙️ Automated Setup**
+- **5-Step Wizard** for complete MCP configuration
+- **System Validation** checks all requirements
+- **SSH Key Management** with Ed25519 security
+- **Error Recovery** with helpful suggestions
+
+### **🔐 Security First**
+- **No Dependencies** - Pure Node.js implementation
+- **Secure Key Generation** for VM access
+- **Input Validation** and sanitization
+- **Branch Protection** for code integrity
 
 ## 🛠️ System Requirements
 
